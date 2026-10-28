@@ -71,7 +71,7 @@ void main() {
             'test',
             parameters: PlantUmlParameters(
               encodingParameters: PlantUmlEncodingParameters(
-                theme: PlantUMLTheme.darkula,
+                theme: PlantUmlTheme.darkula,
               ),
             ),
           )
@@ -81,11 +81,11 @@ void main() {
 
     test('copyWith preserves values', () {
       final params = PlantUmlEncodingParameters(
-        theme: PlantUMLTheme.darkula,
+        theme: PlantUmlTheme.darkula,
         backgroundColor: Color(0xFFFF0000),
       );
-      final copied = params.copyWith(theme: PlantUMLTheme.plain);
-      expect(copied.theme, PlantUMLTheme.plain);
+      final copied = params.copyWith(theme: PlantUmlTheme.plain);
+      expect(copied.theme, PlantUmlTheme.plain);
       expect(copied.backgroundColor, params.backgroundColor);
     });
 
@@ -436,14 +436,14 @@ void main() {
       final encoded = PlantUml.instance.encode(
         '@startuml\nAlice -> Bob\n@enduml',
         parameters: const PlantUmlEncodingParameters(
-          theme: PlantUMLTheme.darkula,
+          theme: PlantUmlTheme.darkula,
         ),
       );
       expect(encoded, isNotEmpty);
     });
 
     test('all themes produce valid encoding', () {
-      for (final theme in PlantUMLTheme.values) {
+      for (final theme in PlantUmlTheme.values) {
         final encoded = PlantUml.instance.encode(
           '@startuml\nAlice -> Bob\n@enduml',
           parameters: PlantUmlEncodingParameters(theme: theme),
@@ -481,7 +481,7 @@ void main() {
       final encoded = PlantUml.instance.encode(
         '@startuml my_diagram\nAlice -> Bob\n@enduml',
         parameters: const PlantUmlEncodingParameters(
-          theme: PlantUMLTheme.plain,
+          theme: PlantUmlTheme.plain,
         ),
       );
       final decoded = _decodePlantUml(encoded);
@@ -500,7 +500,7 @@ void main() {
       final encoded = PlantUml.instance.encode(
         code,
         parameters: const PlantUmlEncodingParameters(
-          theme: PlantUMLTheme.plain,
+          theme: PlantUmlTheme.plain,
         ),
       );
       final decoded = _decodePlantUml(encoded);

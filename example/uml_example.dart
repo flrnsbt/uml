@@ -53,7 +53,7 @@ void plantUmlExamples() {
     code,
     parameters: const PlantUmlParameters(
       encodingParameters: PlantUmlEncodingParameters(
-        theme: PlantUMLTheme.darkula,
+        theme: PlantUmlTheme.darkula,
       ),
     ),
   );

@@ -39,7 +39,7 @@ class MermaidUml extends Uml {
   }) {
     final json = jsonEncode({
       'code': text,
-      'mermaid': {'theme': parameters.theme.name},
+      'mermaid': {'theme': parameters.theme.themeName},
     });
     final bytes = utf8.encode(json);
 
@@ -70,11 +70,13 @@ class MermaidUml extends Uml {
 /// Encoding parameters for Mermaid diagrams.
 ///
 /// Currently supports theme selection.
-class MermaidUmlEncodingParameters extends UmlEncodingParameters {
+class MermaidUmlEncodingParameters
+    extends UmlEncodingParameters<MermaidUmlTheme> {
   /// Creates encoding parameters with an optional theme.
   const MermaidUmlEncodingParameters({this.theme = MermaidUmlTheme.default_});
 
   /// The visual theme for the diagram.
+  @override
   final MermaidUmlTheme theme;
 
   /// Returns a copy of this [MermaidUmlEncodingParameters] with the given fields replaced.

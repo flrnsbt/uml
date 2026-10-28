@@ -18,9 +18,12 @@ abstract class Uml {
 ///
 /// Subclasses define the theme, colors, and other styling options
 /// specific to each UML type (PlantUML, Mermaid, etc.).
-abstract class UmlEncodingParameters {
+abstract class UmlEncodingParameters<U extends UmlTheme> {
   /// Creates encoding parameters for a UML diagram.
   const UmlEncodingParameters();
+
+  /// Returns the theme for this encoding.
+  U get theme;
 }
 
 /// Base class for UML parameters that wrap encoding parameters.
@@ -164,4 +167,25 @@ abstract class UmlProvider {
 
   /// All available UML server providers.
   List<UmlProvider> get all;
+}
+
+/// UML Theme
+abstract class UmlTheme {
+  /// The theme name
+  String get themeName;
+
+  /// The theme brightness
+  UmlBrightness get brightness;
+
+  /// All the themes available
+  List<UmlTheme> get all;
+}
+
+/// UML Theme Brightness
+enum UmlBrightness {
+  /// Dark brightness
+  dark,
+
+  /// Light brightness
+  light,
 }

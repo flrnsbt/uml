@@ -1,42 +1,54 @@
+import 'package:uml/src/base.dart';
+
 export 'package:uml/src/base.dart' show Color, TextAlign;
 
 /// Built-in PlantUML themes.
 ///
 /// Some themes (e.g., [darkula]) require an external dependency that is
 /// automatically included when the theme is applied.
-enum PlantUMLTheme {
+enum PlantUmlTheme implements UmlTheme {
   /// The Spacelab theme with a clean, light appearance.
-  spacelab,
+  spacelab(UmlBrightness.light),
 
   /// The Darkula theme with a dark appearance (requires external dependency).
   darkula(
+    UmlBrightness.dark,
     'https://raw.githubusercontent.com/bschwarz/puml-themes/master/themes/darkula.puml',
   ),
 
   /// The plain theme with no special styling.
-  plain,
+  plain(UmlBrightness.light),
 
   /// The Cyborg theme with a dark, high-contrast appearance.
-  cyborg,
+  cyborg(UmlBrightness.dark),
 
   /// The Sketchy theme with a hand-drawn appearance.
-  sketchy,
+  sketchy(UmlBrightness.light),
 
   /// The Materia theme with a modern, colorful appearance.
-  materia,
+  materia(UmlBrightness.light),
 
   /// The Cerulean theme with a blue-tinted appearance.
-  cerulean,
+  cerulean(UmlBrightness.light),
 
   /// The Superhero theme with a bold, comic-book appearance.
-  superhero,
+  superhero(UmlBrightness.light),
 
   /// The United theme with a professional, light appearance.
-  united;
+  united(UmlBrightness.light);
 
   /// Creates a PlantUML theme with an optional external dependency URL.
-  const PlantUMLTheme([this.externalDependency]);
+  const PlantUmlTheme(this.brightness, [this.externalDependency]);
 
   /// An optional external Puml theme file URL.
   final String? externalDependency;
+
+  @override
+  final UmlBrightness brightness;
+
+  @override
+  String get themeName => name;
+
+  @override
+  List<PlantUmlTheme> get all => values;
 }

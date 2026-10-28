@@ -121,7 +121,7 @@ class PlantUml extends Uml {
 
   static String _applyCustomTheme(
     String code, {
-    PlantUMLTheme? theme,
+    PlantUmlTheme? theme,
     Color? backgroundColor,
     Color? fontColor,
     Color? noteFontColor,
@@ -289,7 +289,7 @@ class PlantUml extends Uml {
         if (theme.externalDependency != null) {
           directivesToInsert.add('!include ${theme.externalDependency}');
         }
-        directivesToInsert.add('!theme ${theme.name}');
+        directivesToInsert.add('!theme ${theme.themeName}');
       }
     }
 
@@ -378,10 +378,10 @@ class PlantUml extends Uml {
 ///
 /// Controls themes, colors, fonts, and block-specific styling.
 /// Use [copyWith] to create modified copies.
-class PlantUmlEncodingParameters extends UmlEncodingParameters {
+class PlantUmlEncodingParameters extends UmlEncodingParameters<PlantUmlTheme> {
   /// Creates encoding parameters with optional theme and styling options.
   const PlantUmlEncodingParameters({
-    this.theme,
+    this.theme = PlantUmlTheme.plain,
     this.backgroundColor,
     this.fontColor,
     this.textAlign = TextAlign.center,
@@ -423,7 +423,8 @@ class PlantUmlEncodingParameters extends UmlEncodingParameters {
   });
 
   /// The PlantUML theme to apply (e.g., Darkula, Spacelab).
-  final PlantUMLTheme? theme;
+  @override
+  final PlantUmlTheme theme;
 
   /// The overall background color of the diagram.
   final Color? backgroundColor;
@@ -541,7 +542,7 @@ class PlantUmlEncodingParameters extends UmlEncodingParameters {
 
   /// Returns a copy of this [PlantUmlEncodingParameters] with the given fields replaced.
   PlantUmlEncodingParameters copyWith({
-    PlantUMLTheme? theme,
+    PlantUmlTheme? theme,
     Color? backgroundColor,
     Color? fontColor,
     TextAlign? textAlign,

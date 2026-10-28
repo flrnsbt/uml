@@ -1,19 +1,28 @@
+import 'package:uml/src/base.dart';
+
 /// Built-in Mermaid themes.
-enum MermaidUmlTheme {
+enum MermaidUmlTheme implements UmlTheme {
   /// The default light theme.
-  default_('default'),
+  default_('default', UmlBrightness.light),
 
   /// A green-themed forest appearance.
-  forest('forest'),
+  forest('forest', UmlBrightness.light),
 
   /// A dark-themed appearance.
-  dark('dark'),
+  dark('dark', UmlBrightness.dark),
 
   /// A neutral, grayscale appearance.
-  neutral('neutral');
+  neutral('neutral', UmlBrightness.light);
 
-  const MermaidUmlTheme(this.name);
+  const MermaidUmlTheme(this.themeName, this.brightness);
 
   /// The theme name used by the Mermaid server.
-  final String name;
+  @override
+  final String themeName;
+
+  @override
+  final UmlBrightness brightness;
+
+  @override
+  List<MermaidUmlTheme> get all => values;
 }
