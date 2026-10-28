@@ -51,6 +51,7 @@ class MermaidUml extends Uml {
   /// Builds a complete [UmlURL] from Mermaid code.
   ///
   /// Applies [parameters] for file type, provider, and theme.
+  @override
   UmlURL getUrl(
     String code, {
     MermaidUmlParameters parameters = const MermaidUmlParameters(),
