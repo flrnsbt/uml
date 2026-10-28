@@ -1,14 +1,26 @@
 import 'dart:typed_data';
 
-import 'io.dart' if (dart.library.html) 'web.dart' as platform;
+import 'io.dart' if (dart.library.js_interop) 'web.dart' as platform;
 
 /// Supported file types for UML diagram exports.
-enum FileType { svg, png, webp, jpeg }
+enum FileType {
+  /// Scalable Vector Graphics format.
+  svg,
+  /// Portable Network Graphics format.
+  png,
+  /// WebP image format.
+  webp,
+  /// JPEG image format.
+  jpeg
+}
 
 /// Result of saving a UML diagram to a file.
 class SavedFile {
+  /// Creates a saved file result with the file path and byte count.
   const SavedFile({required this.path, required this.bytesWritten});
+  /// The absolute path to the saved file.
   final String path;
+  /// The number of bytes written to the file.
   final int bytesWritten;
 
   @override

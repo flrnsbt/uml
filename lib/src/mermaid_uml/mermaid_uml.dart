@@ -24,6 +24,7 @@ export 'package:uml/src/mermaid_uml/types/theme.dart';
 class MermaidUrl {
   MermaidUrl._();
   static MermaidUrl? _instance;
+  /// Returns the singleton instance of [MermaidUrl].
   static MermaidUrl get instance => _instance ??= MermaidUrl._();
 
   /// Encodes Mermaid code with optional theme.
@@ -69,11 +70,13 @@ class MermaidUrl {
 ///
 /// Currently supports theme selection.
 class MermaidUmlEncodingParameters extends UmlEncodingParameters {
+  /// Creates encoding parameters with an optional theme.
   const MermaidUmlEncodingParameters({this.theme = MermaidUmlTheme.default_});
 
   /// The visual theme for the diagram.
   final MermaidUmlTheme theme;
 
+  /// Returns a copy of this [MermaidUmlEncodingParameters] with the given fields replaced.
   MermaidUmlEncodingParameters copyWith({MermaidUmlTheme? theme}) {
     return MermaidUmlEncodingParameters(theme: theme ?? this.theme);
   }
@@ -83,12 +86,14 @@ class MermaidUmlEncodingParameters extends UmlEncodingParameters {
 ///
 /// Wraps [encodingParameters] with a [provider] and optional [type].
 class MermaidUmlParameters extends UmlParameters<MermaidUmlEncodingParameters> {
+  /// Creates parameters for generating Mermaid diagram URLs.
   const MermaidUmlParameters({
     this.encodingParameters = const MermaidUmlEncodingParameters(),
     this.provider = MermaidUmlProvider.mermaidink,
     this.type,
   });
   @override
+  /// The encoding-specific parameters for theme selection.
   final MermaidUmlEncodingParameters encodingParameters;
 
   /// The Mermaid server provider.
@@ -97,6 +102,7 @@ class MermaidUmlParameters extends UmlParameters<MermaidUmlEncodingParameters> {
   /// The output file type (SVG, PNG, WebP, or JPEG). Defaults to SVG.
   final MermaidUmlFileType? type;
 
+  /// Returns a copy of this [MermaidUmlParameters] with the given fields replaced.
   MermaidUmlParameters copyWith({
     MermaidUmlEncodingParameters? encodingParameters,
     MermaidUmlProvider? provider,

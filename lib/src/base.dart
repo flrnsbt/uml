@@ -7,6 +7,7 @@ import 'package:uml/src/download/download.dart';
 /// Subclasses define the theme, colors, and other styling options
 /// specific to each UML type (PlantUML, Mermaid, etc.).
 abstract class UmlEncodingParameters {
+  /// Creates encoding parameters for a UML diagram.
   const UmlEncodingParameters();
 }
 
@@ -14,7 +15,9 @@ abstract class UmlEncodingParameters {
 ///
 /// Provides provider, file type, and encoding configuration.
 abstract class UmlParameters<P extends UmlEncodingParameters> {
+  /// Creates UML parameters with encoding configuration.
   const UmlParameters();
+  /// The encoding-specific parameters for this UML type.
   P get encodingParameters;
 }
 
@@ -22,6 +25,7 @@ abstract class UmlParameters<P extends UmlEncodingParameters> {
 ///
 /// Implemented by [PlantUMLFileType] and [MermaidUmlFileType].
 abstract class FileTypeBase {
+  /// The underlying [FileType] enum value.
   FileType get type;
 }
 
@@ -30,6 +34,7 @@ abstract class FileTypeBase {
 /// Provides convenient methods to download diagram bytes and save them
 /// to a file on disk (native) or trigger a browser download (web).
 class UmlURL {
+  /// Creates a URL wrapper for a UML diagram.
   UmlURL(this.url, this.fileType);
 
   /// The full URL of the diagram.

@@ -25,6 +25,7 @@ export 'types/theme.dart';
 class PlantUmlUrl {
   PlantUmlUrl._();
   static PlantUmlUrl? _instance;
+  /// Returns the singleton instance of [PlantUmlUrl].
   static PlantUmlUrl get instance => _instance ??= PlantUmlUrl._();
 
   static const _plantUml64 =
@@ -418,6 +419,7 @@ class PlantUmlUrl {
 /// Controls themes, colors, fonts, and block-specific styling.
 /// Use [copyWith] to create modified copies.
 class PlantUmlEncodingParameters extends UmlEncodingParameters {
+  /// Creates encoding parameters with optional theme and styling options.
   const PlantUmlEncodingParameters({
     this.theme,
     this.backgroundColor,
@@ -460,44 +462,83 @@ class PlantUmlEncodingParameters extends UmlEncodingParameters {
     this.classBorderColor,
   });
 
+  /// The PlantUML theme to apply (e.g., Darkula, Spacelab).
   final PlantUMLTheme? theme;
+  /// The overall background color of the diagram.
   final Color? backgroundColor;
+  /// The default font color for all text elements.
   final Color? fontColor;
+  /// The text alignment for diagram elements.
   final TextAlign textAlign;
+  /// The corner radius for activity nodes, as a value between 0.0 and 1.0.
   final double? activityRoundCorner;
+  /// The font size for all text elements.
   final double? fontSize;
+  /// The font color for note elements.
   final Color? noteFontColor;
+  /// The background color for note elements.
   final Color? noteBackgroundColor;
+  /// The border color for note elements.
   final Color? noteBorderColor;
+  /// The background color for activity nodes.
   final Color? activityBackgroundColor;
+  /// The font color for activity nodes.
   final Color? activityFontColor;
+  /// The border color for activity nodes.
   final Color? activityBorderColor;
+  /// The background color for rectangle elements.
   final Color? rectangleBackgroundColor;
+  /// The font color for rectangle elements.
   final Color? rectangleFontColor;
+  /// The border color for rectangle elements.
   final Color? rectangleBorderColor;
+  /// The background color for partition elements.
   final Color? partitionBackgroundColor;
+  /// The font color for partition elements.
   final Color? partitionFontColor;
+  /// The border color for partition elements.
   final Color? partitionBorderColor;
+  /// The color of the start node in activity diagrams.
   final Color? activityStartColor;
+  /// The color of the end node in activity diagrams.
   final Color? activityEndColor;
+  /// The background color of the end node in activity diagrams.
   final Color? activityEndBackgroundColor;
+  /// The border color of the end node in activity diagrams.
   final Color? activityEndBorderColor;
+  /// The background color of decision diamond nodes in activity diagrams.
   final Color? activityDiamondBackgroundColor;
+  /// The color of arrows and connectors between elements.
   final Color? arrowColor;
+  /// The background color for component elements.
   final Color? componentBackgroundColor;
+  /// The font color for component elements.
   final Color? componentFontColor;
+  /// The border color for component elements.
   final Color? componentBorderColor;
+  /// The background color for interface elements.
   final Color? interfaceBackgroundColor;
+  /// The font color for interface elements.
   final Color? interfaceFontColor;
+  /// The border color for interface elements.
   final Color? interfaceBorderColor;
+  /// The background color for package elements.
   final Color? packageBackgroundColor;
+  /// The font color for package elements.
   final Color? packageFontColor;
+  /// The border color for package elements.
   final Color? packageBorderColor;
+  /// The background color for sequence diagram lifelines.
   final Color? sequenceBackgroundColor;
+  /// The font color for sequence diagram elements.
   final Color? sequenceFontColor;
+  /// The border color for sequence diagram elements.
   final Color? sequenceBorderColor;
+  /// The background color for class elements.
   final Color? classBackgroundColor;
+  /// The font color for class elements.
   final Color? classFontColor;
+  /// The border color for class elements.
   final Color? classBorderColor;
 
   /// Returns a copy of this [PlantUmlEncodingParameters] with the given fields replaced.
@@ -600,12 +641,14 @@ class PlantUmlEncodingParameters extends UmlEncodingParameters {
 ///
 /// Wraps [encodingParameters] with a [provider] and optional [type].
 class PlantUmlParameters extends UmlParameters<PlantUmlEncodingParameters> {
+  /// Creates parameters for generating PlantUML diagram URLs.
   const PlantUmlParameters({
     this.encodingParameters = const PlantUmlEncodingParameters(),
     this.provider = PlantUMLProvider.planttext,
     this.type,
   });
   @override
+  /// The encoding-specific parameters for theme, colors, and styling.
   final PlantUmlEncodingParameters encodingParameters;
 
   /// The PlantUML server provider.
