@@ -6,18 +6,22 @@ import 'package:path/path.dart' as p;
 import 'download.dart';
 
 /// Downloads the binary content of a UML URL on native platforms.
+/// Throws an [Exception] if the HTTP response status indicates an error.
 Future<Uint8List> downloadUmlURL(String url) async {
   final client = HttpClient();
   try {
     final request = await client.getUrl(Uri.parse(url));
     final response = await request.close();
-    final bytes = await response.fold<Uint8List>(
-      Uint8List(0),
-      (bytes, data) => Uint8List.fromList([...bytes, ...data]),
-    );
-    return bytes;
+    if (response.statusCode != 200) {
+      throw Exception(
+        'Failed to download: ${response.statusCode} ${response.reasonPhrase}',
+      );
+    }
+    final buffer = BytesBuilder(copy: false);
+    await response.forEach(buffer.add);
+    return buffer.takeBytes();
   } finally {
-    client.close();
+    client.close(force: true);
   }
 }
 

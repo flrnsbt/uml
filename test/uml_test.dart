@@ -158,5 +158,281 @@ void main() {
       );
       expect(encoded, isNotEmpty);
     });
+
+    test('handles empty code', () {
+      final encoded = PlantUmlUrl.instance.encode('');
+      expect(encoded, isNotEmpty);
+    });
+
+    test('handles code with special characters', () {
+      final code = '@startuml\nAlice -> Bob : Hello & Welcome!\n@enduml';
+      final encoded = PlantUmlUrl.instance.encode(code);
+      expect(encoded, isNotEmpty);
+    });
+
+    test('applies block-specific styling', () {
+      final code = '@startuml\nAlice -> Bob\n@enduml';
+      final encoded = PlantUmlUrl.instance.encode(
+        code,
+        parameters: PlantUmlEncodingParameters(
+          rectangleBackgroundColor: Color(0xFFEEFFEE),
+          rectangleFontColor: Color(0xFF006600),
+          rectangleBorderColor: Color(0xFF009900),
+          activityRoundCorner: 10.0,
+        ),
+      );
+      expect(encoded, isNotEmpty);
+    });
+
+    test('applies activity styling', () {
+      final code = '@startuml\nstart\n@enduml';
+      final encoded = PlantUmlUrl.instance.encode(
+        code,
+        parameters: PlantUmlEncodingParameters(
+          activityBackgroundColor: Color(0xFFFFF0EE),
+          activityFontColor: Color(0xFF996600),
+          activityBorderColor: Color(0xFFCC9900),
+          activityStartColor: Color(0xFF00FF00),
+          activityEndColor: Color(0xFFFF0000),
+          activityEndBackgroundColor: Color(0xFFFFCCCC),
+          activityEndBorderColor: Color(0xFFCC0000),
+          activityDiamondBackgroundColor: Color(0xFFFFCC00),
+        ),
+      );
+      expect(encoded, isNotEmpty);
+    });
+
+    test('applies component styling', () {
+      final code = '@startuml\ncomponent A\n@enduml';
+      final encoded = PlantUmlUrl.instance.encode(
+        code,
+        parameters: PlantUmlEncodingParameters(
+          componentBackgroundColor: Color(0xFFEEEEFF),
+          componentFontColor: Color(0xFF000099),
+          componentBorderColor: Color(0xFF0000CC),
+        ),
+      );
+      expect(encoded, isNotEmpty);
+    });
+
+    test('applies interface styling', () {
+      final code = '@startuml\ninterface A\n@enduml';
+      final encoded = PlantUmlUrl.instance.encode(
+        code,
+        parameters: PlantUmlEncodingParameters(
+          interfaceBackgroundColor: Color(0xFFFFEEEE),
+          interfaceFontColor: Color(0xFF990000),
+          interfaceBorderColor: Color(0xFFCC0000),
+        ),
+      );
+      expect(encoded, isNotEmpty);
+    });
+
+    test('applies package styling', () {
+      final code = '@startuml\npackage A\n@enduml';
+      final encoded = PlantUmlUrl.instance.encode(
+        code,
+        parameters: PlantUmlEncodingParameters(
+          packageBackgroundColor: Color(0xFFEEEEEE),
+          packageFontColor: Color(0xFF333333),
+          packageBorderColor: Color(0xFF666666),
+        ),
+      );
+      expect(encoded, isNotEmpty);
+    });
+
+    test('applies sequence styling', () {
+      final code = '@startuml\nAlice -> Bob\n@enduml';
+      final encoded = PlantUmlUrl.instance.encode(
+        code,
+        parameters: PlantUmlEncodingParameters(
+          sequenceBackgroundColor: Color(0xFFFFFEEE),
+          sequenceFontColor: Color(0xFF666600),
+          sequenceBorderColor: Color(0xFF999900),
+        ),
+      );
+      expect(encoded, isNotEmpty);
+    });
+
+    test('applies class styling', () {
+      final code = '@startuml\nclass A\n@enduml';
+      final encoded = PlantUmlUrl.instance.encode(
+        code,
+        parameters: PlantUmlEncodingParameters(
+          classBackgroundColor: Color(0xFFEEF0FF),
+          classFontColor: Color(0xFF000066),
+          classBorderColor: Color(0xFF000099),
+        ),
+      );
+      expect(encoded, isNotEmpty);
+    });
+
+    test('applies arrow color', () {
+      final code = '@startuml\nAlice -> Bob\n@enduml';
+      final encoded = PlantUmlUrl.instance.encode(
+        code,
+        parameters: const PlantUmlEncodingParameters(
+          arrowColor: Color(0xFF0066CC),
+        ),
+      );
+      expect(encoded, isNotEmpty);
+    });
+
+    test('applies note styling', () {
+      final code = '@startuml\nnote: Hello\n@enduml';
+      final encoded = PlantUmlUrl.instance.encode(
+        code,
+        parameters: const PlantUmlEncodingParameters(
+          noteFontColor: Color(0xFFCC0000),
+          noteBackgroundColor: Color(0xFFFFFFCC),
+          noteBorderColor: Color(0xFFCCCC00),
+        ),
+      );
+      expect(encoded, isNotEmpty);
+    });
+
+    test('applies partition styling', () {
+      final code = '@startuml\n|partition|\n@enduml';
+      final encoded = PlantUmlUrl.instance.encode(
+        code,
+        parameters: const PlantUmlEncodingParameters(
+          partitionBackgroundColor: Color(0xFFF0F0FF),
+          partitionFontColor: Color(0xFF333366),
+          partitionBorderColor: Color(0xFF666699),
+        ),
+      );
+      expect(encoded, isNotEmpty);
+    });
+
+    test('applies text alignment', () {
+      final code = '@startuml\nAlice -> Bob\n@enduml';
+      final encoded = PlantUmlUrl.instance.encode(
+        code,
+        parameters: const PlantUmlEncodingParameters(
+          textAlign: TextAlign.left,
+        ),
+      );
+      expect(encoded, isNotEmpty);
+    });
+
+    test('applies font size', () {
+      final code = '@startuml\nAlice -> Bob\n@enduml';
+      final encoded = PlantUmlUrl.instance.encode(
+        code,
+        parameters: const PlantUmlEncodingParameters(fontSize: 18),
+      );
+      expect(encoded, isNotEmpty);
+    });
+  });
+
+  group('Color edge cases', () {
+    test('toHex with zero value', () {
+      final color = const Color(0xFF000000);
+      expect(color.toHex(), equals('#000000'));
+    });
+
+    test('toHex with max value', () {
+      final color = const Color(0xFFFFFFFF);
+      expect(color.toHex(), equals('#FFFFFF'));
+    });
+
+    test('toHex with mixed values', () {
+      final color = const Color(0xFF804020);
+      expect(color.toHex(), equals('#804020'));
+    });
+
+    test('toString format', () {
+      final color = const Color(0xFFFF0000);
+      expect(color.toString(), contains('ffff0000'));
+    });
+  });
+
+  group('UmlURL', () {
+    test('toString format', () {
+      final url = UmlURL('https://example.com/diagram.svg', FileType.svg);
+      expect(url.toString(), contains('https://example.com/diagram.svg'));
+      expect(url.toString(), contains('FileType.svg'));
+    });
+  });
+
+  group('Mermaid edge cases', () {
+    test('encode with empty code', () {
+      final encoded = MermaidUrl.instance.encode('');
+      expect(encoded, startsWith('pako:'));
+    });
+
+    test('encode with special characters', () {
+      final encoded = MermaidUrl.instance.encode('graph TD; A["Hello & World!"] --> B');
+      expect(encoded, startsWith('pako:'));
+    });
+
+    test('all file types generate valid URLs', () {
+      final code = 'graph TD; A --> B';
+      for (final type in MermaidUmlFileType.values) {
+        final url = MermaidUrl.instance.getUrl(
+          code,
+          parameters: MermaidUmlParameters(type: type),
+        );
+        expect(url.url, startsWith('https://'));
+      }
+    });
+  });
+
+  group('PlantUML providers', () {
+    test('planttext provider URL', () {
+      final url = PlantUmlUrl.instance
+          .getUrl(
+            'test',
+            parameters:
+                const PlantUmlParameters(provider: PlantUMLProvider.planttext),
+          )
+          .url;
+      expect(url, contains('planttext.com'));
+    });
+
+    test('plantuml provider URL', () {
+      final url = PlantUmlUrl.instance
+          .getUrl(
+            'test',
+            parameters:
+                const PlantUmlParameters(provider: PlantUMLProvider.plantuml),
+          )
+          .url;
+      expect(url, contains('plantuml.com'));
+    });
+  });
+
+  group('PlantUML themes with external dependencies', () {
+    test('darkula theme includes external dependency', () {
+      final encoded = PlantUmlUrl.instance.encode(
+        '@startuml\nAlice -> Bob\n@enduml',
+        parameters: const PlantUmlEncodingParameters(
+          theme: PlantUMLTheme.darkula,
+        ),
+      );
+      expect(encoded, isNotEmpty);
+    });
+
+    test('all themes produce valid encoding', () {
+      for (final theme in PlantUMLTheme.values) {
+        final encoded = PlantUmlUrl.instance.encode(
+          '@startuml\nAlice -> Bob\n@enduml',
+          parameters: PlantUmlEncodingParameters(theme: theme),
+        );
+        expect(encoded, isNotEmpty, reason: 'Theme $theme should encode');
+      }
+    });
+  });
+
+  group('Mermaid themes', () {
+    test('all themes produce valid encoding', () {
+      for (final theme in MermaidUmlTheme.values) {
+        final encoded = MermaidUrl.instance.encode(
+          'graph TD; A --> B',
+          parameters: MermaidUmlEncodingParameters(theme: theme),
+        );
+        expect(encoded, startsWith('pako:'), reason: 'Theme $theme should encode');
+      }
+    });
   });
 }

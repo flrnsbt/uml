@@ -9,11 +9,26 @@ export 'package:uml/src/mermaid_uml/types/file_type.dart';
 export 'package:uml/src/mermaid_uml/types/provider.dart';
 export 'package:uml/src/mermaid_uml/types/theme.dart';
 
+/// Singleton that generates Mermaid diagram URLs.
+///
+/// Encodes Mermaid code with optional themes and builds a URL
+/// that renders the diagram on a Mermaid server.
+///
+/// Example:
+/// ```dart
+/// final url = MermaidUrl.instance.getUrl(
+///   'graph LR; A --> B',
+///   parameters: const MermaidUmlParameters(type: MermaidUmlFileType.svg),
+/// );
+/// ```
 class MermaidUrl {
   static MermaidUrl? _instance;
   static MermaidUrl get instance => _instance ??= MermaidUrl._();
   MermaidUrl._();
 
+  /// Encodes Mermaid code with optional theme.
+  ///
+  /// Returns a pako-encoded string suitable for use in Mermaid URLs.
   String encode(
     String text, {
     MermaidUmlEncodingParameters parameters =
@@ -30,6 +45,9 @@ class MermaidUrl {
     return 'pako:${base64UrlEncode(compressed)}';
   }
 
+  /// Builds a complete [UmlURL] from Mermaid code.
+  ///
+  /// Applies [parameters] for file type, provider, and theme.
   UmlURL getUrl(
     String code, {
     MermaidUmlParameters parameters = const MermaidUmlParameters(),
@@ -47,9 +65,13 @@ class MermaidUrl {
   }
 }
 
+/// Encoding parameters for Mermaid diagrams.
+///
+/// Currently supports theme selection.
 class MermaidUmlEncodingParameters extends UmlEncodingParameters {
   const MermaidUmlEncodingParameters({this.theme = MermaidUmlTheme.default_});
 
+  /// The visual theme for the diagram.
   final MermaidUmlTheme theme;
 
   MermaidUmlEncodingParameters copyWith({MermaidUmlTheme? theme}) {
@@ -57,11 +79,17 @@ class MermaidUmlEncodingParameters extends UmlEncodingParameters {
   }
 }
 
+/// Parameters for generating Mermaid diagram URLs.
+///
+/// Wraps [encodingParameters] with a [provider] and optional [type].
 class MermaidUmlParameters extends UmlParameters<MermaidUmlEncodingParameters> {
   @override
   final MermaidUmlEncodingParameters encodingParameters;
 
+  /// The Mermaid server provider.
   final MermaidUmlProvider provider;
+
+  /// The output file type (SVG, PNG, WebP, or JPEG). Defaults to SVG.
   final MermaidUmlFileType? type;
 
   const MermaidUmlParameters({

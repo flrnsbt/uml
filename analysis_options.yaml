@@ -13,15 +13,29 @@
 
 include: package:lints/recommended.yaml
 
-# Uncomment the following section to specify additional rules.
-
-# linter:
-#   rules:
-#     - camel_case_types
-
-# analyzer:
-#   exclude:
-#     - path/to/excluded/files/**
+linter:
+  rules:
+    - public_member_api_docs
+    - prefer_final_locals
+    - avoid_positional_boolean_parameters
+    - prefer_single_quotes
+    - unnecessary_lambdas
+    - use_string_buffers
+    - sort_constructors_first
+    - always_declare_return_types
+    - avoid_empty_else
+    - avoid_print
+    - cancel_subscriptions
+    - close_sinks
+    - collection_methods_unrelated_type
+    - control_flow_in_finally
+    - empty_statements
+    - hash_and_equals
+    - unnecessary_string_interpolations
+    - test_types_in_equals
+    - throw_in_finally
+    - unnecessary_getters_setters
+    - valid_regexps
 
 # For more information about the core and recommended set of lints, see
 # https://dart.dev/go/core-lints

@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:uml/uml.dart';
 
-void main() {
+void main() async {
   print('=== UML Library Examples ===\n');
 
   plantUmlExamples();
@@ -11,7 +11,7 @@ void main() {
   mermaidExamples();
   print('\n');
 
-  downloadAndSaveExample();
+  await downloadAndSaveExample();
 }
 
 // ---------------------------------------------------------------------------

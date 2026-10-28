@@ -5,6 +5,7 @@ import 'package:web/web.dart';
 
 import 'download.dart';
 
+
 /// Downloads the binary content of a UML URL on web platforms.
 Future<Uint8List> downloadUmlURL(String url) async {
   final response = await window.fetch(url.toJS).toDart;

@@ -10,6 +10,18 @@ export 'types/file_type.dart';
 export 'types/provider.dart';
 export 'types/theme.dart';
 
+/// Singleton that generates PlantUML diagram URLs.
+///
+/// Encodes PlantUML code with optional themes, colors, and styling,
+/// then builds a URL that renders the diagram on a PlantUML server.
+///
+/// Example:
+/// ```dart
+/// final url = PlantUmlUrl.instance.getUrl(
+///   '@startuml\nAlice -> Bob\n@enduml',
+///   parameters: const PlantUmlParameters(type: PlantUMLFileType.svg),
+/// );
+/// ```
 class PlantUmlUrl {
   static PlantUmlUrl? _instance;
   static PlantUmlUrl get instance => _instance ??= PlantUmlUrl._();
@@ -19,6 +31,9 @@ class PlantUmlUrl {
   static const _plantUml64 =
       "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_";
 
+  /// Encodes PlantUML code with optional theme and styling.
+  ///
+  /// Returns a PlantUML-compatible encoded string suitable for use in URLs.
   String encode(
     String text, {
     PlantUmlEncodingParameters parameters = const PlantUmlEncodingParameters(),
@@ -68,6 +83,9 @@ class PlantUmlUrl {
     return _encodePlantUml(themedCode);
   }
 
+  /// Builds a complete [UmlURL] from PlantUML code.
+  ///
+  /// Applies [parameters] for file type, provider, theme, and styling.
   UmlURL getUrl(
     String code, {
     PlantUmlParameters parameters = const PlantUmlParameters(),
@@ -396,6 +414,10 @@ class PlantUmlUrl {
   }
 }
 
+/// Encoding parameters for PlantUML diagrams.
+///
+/// Controls themes, colors, fonts, and block-specific styling.
+/// Use [copyWith] to create modified copies.
 class PlantUmlEncodingParameters extends UmlEncodingParameters {
   const PlantUmlEncodingParameters({
     this.theme,
@@ -479,6 +501,7 @@ class PlantUmlEncodingParameters extends UmlEncodingParameters {
   final Color? classFontColor;
   final Color? classBorderColor;
 
+  /// Returns a copy of this [PlantUmlEncodingParameters] with the given fields replaced.
   PlantUmlEncodingParameters copyWith({
     PlantUMLTheme? theme,
     Color? backgroundColor,
@@ -574,11 +597,17 @@ class PlantUmlEncodingParameters extends UmlEncodingParameters {
   }
 }
 
+/// Parameters for generating PlantUML diagram URLs.
+///
+/// Wraps [encodingParameters] with a [provider] and optional [type].
 class PlantUmlParameters extends UmlParameters<PlantUmlEncodingParameters> {
   @override
   final PlantUmlEncodingParameters encodingParameters;
 
+  /// The PlantUML server provider.
   final PlantUMLProvider provider;
+
+  /// The output file type (SVG or PNG). Defaults to SVG.
   final PlantUMLFileType? type;
 
   const PlantUmlParameters({
@@ -587,6 +616,7 @@ class PlantUmlParameters extends UmlParameters<PlantUmlEncodingParameters> {
     this.type,
   });
 
+  /// Returns a copy of this [PlantUmlParameters] with the given fields replaced.
   PlantUmlParameters copyWith({
     PlantUmlEncodingParameters? encodingParameters,
     PlantUMLProvider? provider,
