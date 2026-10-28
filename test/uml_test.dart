@@ -1,25 +1,52 @@
+import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:archive/archive.dart';
 import 'package:test/test.dart';
 import 'package:uml/uml.dart';
 
+String _decodePlantUml(String encoded) {
+  const plantUml64 =
+      '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_';
+  final bytes = <int>[];
+  for (var i = 0; i < encoded.length; i += 4) {
+    final c1 = plantUml64.indexOf(encoded[i]);
+    final c2 = i + 1 < encoded.length ? plantUml64.indexOf(encoded[i + 1]) : 0;
+    final c3 = i + 2 < encoded.length ? plantUml64.indexOf(encoded[i + 2]) : 0;
+    final c4 = i + 3 < encoded.length ? plantUml64.indexOf(encoded[i + 3]) : 0;
+
+    final b1 = (c1 << 2) | (c2 >> 4);
+    final b2 = ((c2 & 0xF) << 4) | (c3 >> 2);
+    final b3 = ((c3 & 0x3) << 6) | c4;
+
+    bytes.add(b1);
+    if (i + 2 < encoded.length) bytes.add(b2);
+    if (i + 3 < encoded.length) bytes.add(b3);
+  }
+  final decompressed = Inflate(bytes).getBytes();
+  return utf8.decode(decompressed);
+}
+
 void main() {
-  group('PlantUmlUrl', () {
+  group('PlantUml', () {
     test('singleton instance', () {
-      expect(PlantUmlUrl.instance, PlantUmlUrl.instance);
+      expect(PlantUml.instance, PlantUml.instance);
     });
 
     test('encode returns non-empty string', () {
-      final encoded = PlantUmlUrl.instance.encode('test');
+      final encoded = PlantUml.instance.encode('test');
       expect(encoded, isNotEmpty);
     });
 
     test('getUrl returns valid URL without trailing brace', () {
-      final url = PlantUmlUrl.instance.getUrl('test diagram').url;
+      final url = PlantUml.instance.getUrl('test diagram').url;
       expect(url, startsWith('https://'));
       expect(url, isNot(endsWith('}')));
     });
 
     test('getUrl with custom provider', () {
-      final url = PlantUmlUrl.instance
+      final url = PlantUml.instance
           .getUrl(
             'test',
             parameters: PlantUmlParameters(provider: PlantUMLProvider.plantuml),
@@ -29,7 +56,7 @@ void main() {
     });
 
     test('getUrl with custom file type', () {
-      final url = PlantUmlUrl.instance
+      final url = PlantUml.instance
           .getUrl(
             'test',
             parameters: PlantUmlParameters(type: PlantUMLFileType.png),
@@ -39,7 +66,7 @@ void main() {
     });
 
     test('getUrl with theme', () {
-      final url = PlantUmlUrl.instance
+      final url = PlantUml.instance
           .getUrl(
             'test',
             parameters: PlantUmlParameters(
@@ -73,24 +100,24 @@ void main() {
     });
   });
 
-  group('MermaidUrl', () {
+  group('MermaidUml', () {
     test('singleton instance', () {
-      expect(MermaidUrl.instance, MermaidUrl.instance);
+      expect(MermaidUml.instance, MermaidUml.instance);
     });
 
     test('encode returns pako encoded string', () {
-      final encoded = MermaidUrl.instance.encode('graph TD; A-->B;');
+      final encoded = MermaidUml.instance.encode('graph TD; A-->B;');
       expect(encoded, startsWith('pako:'));
     });
 
     test('getUrl returns valid URL without trailing brace', () {
-      final url = MermaidUrl.instance.getUrl('graph TD; A-->B;').url;
+      final url = MermaidUml.instance.getUrl('graph TD; A-->B;').url;
       expect(url, startsWith('https://'));
       expect(url, isNot(endsWith('}')));
     });
 
     test('getUrl with SVG type', () {
-      final url = MermaidUrl.instance
+      final url = MermaidUml.instance
           .getUrl(
             'graph TD; A-->B;',
             parameters: MermaidUmlParameters(type: MermaidUmlFileType.svg),
@@ -100,7 +127,7 @@ void main() {
     });
 
     test('getUrl with PNG type includes query', () {
-      final url = MermaidUrl.instance
+      final url = MermaidUml.instance
           .getUrl(
             'graph TD; A-->B;',
             parameters: MermaidUmlParameters(type: MermaidUmlFileType.png),
@@ -139,9 +166,9 @@ void main() {
     });
   });
 
-  group('PlantUmlUrl theme application', () {
+  group('PlantUml theme application', () {
     test('wraps code without @startuml', () {
-      final encoded = PlantUmlUrl.instance.encode(
+      final encoded = PlantUml.instance.encode(
         'Alice -> Bob',
         parameters: PlantUmlEncodingParameters(
           backgroundColor: Color(0xFFFFFFFF),
@@ -152,7 +179,7 @@ void main() {
 
     test('preserves @startuml/@enduml wrapping', () {
       final code = '@startuml\nAlice -> Bob\n@enduml';
-      final encoded = PlantUmlUrl.instance.encode(
+      final encoded = PlantUml.instance.encode(
         code,
         parameters: PlantUmlEncodingParameters(fontColor: Color(0xFF000000)),
       );
@@ -160,19 +187,19 @@ void main() {
     });
 
     test('handles empty code', () {
-      final encoded = PlantUmlUrl.instance.encode('');
+      final encoded = PlantUml.instance.encode('');
       expect(encoded, isNotEmpty);
     });
 
     test('handles code with special characters', () {
       final code = '@startuml\nAlice -> Bob : Hello & Welcome!\n@enduml';
-      final encoded = PlantUmlUrl.instance.encode(code);
+      final encoded = PlantUml.instance.encode(code);
       expect(encoded, isNotEmpty);
     });
 
     test('applies block-specific styling', () {
       final code = '@startuml\nAlice -> Bob\n@enduml';
-      final encoded = PlantUmlUrl.instance.encode(
+      final encoded = PlantUml.instance.encode(
         code,
         parameters: PlantUmlEncodingParameters(
           rectangleBackgroundColor: Color(0xFFEEFFEE),
@@ -186,7 +213,7 @@ void main() {
 
     test('applies activity styling', () {
       final code = '@startuml\nstart\n@enduml';
-      final encoded = PlantUmlUrl.instance.encode(
+      final encoded = PlantUml.instance.encode(
         code,
         parameters: PlantUmlEncodingParameters(
           activityBackgroundColor: Color(0xFFFFF0EE),
@@ -204,7 +231,7 @@ void main() {
 
     test('applies component styling', () {
       final code = '@startuml\ncomponent A\n@enduml';
-      final encoded = PlantUmlUrl.instance.encode(
+      final encoded = PlantUml.instance.encode(
         code,
         parameters: PlantUmlEncodingParameters(
           componentBackgroundColor: Color(0xFFEEEEFF),
@@ -217,7 +244,7 @@ void main() {
 
     test('applies interface styling', () {
       final code = '@startuml\ninterface A\n@enduml';
-      final encoded = PlantUmlUrl.instance.encode(
+      final encoded = PlantUml.instance.encode(
         code,
         parameters: PlantUmlEncodingParameters(
           interfaceBackgroundColor: Color(0xFFFFEEEE),
@@ -230,7 +257,7 @@ void main() {
 
     test('applies package styling', () {
       final code = '@startuml\npackage A\n@enduml';
-      final encoded = PlantUmlUrl.instance.encode(
+      final encoded = PlantUml.instance.encode(
         code,
         parameters: PlantUmlEncodingParameters(
           packageBackgroundColor: Color(0xFFEEEEEE),
@@ -243,7 +270,7 @@ void main() {
 
     test('applies sequence styling', () {
       final code = '@startuml\nAlice -> Bob\n@enduml';
-      final encoded = PlantUmlUrl.instance.encode(
+      final encoded = PlantUml.instance.encode(
         code,
         parameters: PlantUmlEncodingParameters(
           sequenceBackgroundColor: Color(0xFFFFFEEE),
@@ -256,7 +283,7 @@ void main() {
 
     test('applies class styling', () {
       final code = '@startuml\nclass A\n@enduml';
-      final encoded = PlantUmlUrl.instance.encode(
+      final encoded = PlantUml.instance.encode(
         code,
         parameters: PlantUmlEncodingParameters(
           classBackgroundColor: Color(0xFFEEF0FF),
@@ -269,7 +296,7 @@ void main() {
 
     test('applies arrow color', () {
       final code = '@startuml\nAlice -> Bob\n@enduml';
-      final encoded = PlantUmlUrl.instance.encode(
+      final encoded = PlantUml.instance.encode(
         code,
         parameters: const PlantUmlEncodingParameters(
           arrowColor: Color(0xFF0066CC),
@@ -280,7 +307,7 @@ void main() {
 
     test('applies note styling', () {
       final code = '@startuml\nnote: Hello\n@enduml';
-      final encoded = PlantUmlUrl.instance.encode(
+      final encoded = PlantUml.instance.encode(
         code,
         parameters: const PlantUmlEncodingParameters(
           noteFontColor: Color(0xFFCC0000),
@@ -293,7 +320,7 @@ void main() {
 
     test('applies partition styling', () {
       final code = '@startuml\n|partition|\n@enduml';
-      final encoded = PlantUmlUrl.instance.encode(
+      final encoded = PlantUml.instance.encode(
         code,
         parameters: const PlantUmlEncodingParameters(
           partitionBackgroundColor: Color(0xFFF0F0FF),
@@ -306,7 +333,7 @@ void main() {
 
     test('applies text alignment', () {
       final code = '@startuml\nAlice -> Bob\n@enduml';
-      final encoded = PlantUmlUrl.instance.encode(
+      final encoded = PlantUml.instance.encode(
         code,
         parameters: const PlantUmlEncodingParameters(textAlign: TextAlign.left),
       );
@@ -315,7 +342,7 @@ void main() {
 
     test('applies font size', () {
       final code = '@startuml\nAlice -> Bob\n@enduml';
-      final encoded = PlantUmlUrl.instance.encode(
+      final encoded = PlantUml.instance.encode(
         code,
         parameters: const PlantUmlEncodingParameters(fontSize: 18),
       );
@@ -355,12 +382,12 @@ void main() {
 
   group('Mermaid edge cases', () {
     test('encode with empty code', () {
-      final encoded = MermaidUrl.instance.encode('');
+      final encoded = MermaidUml.instance.encode('');
       expect(encoded, startsWith('pako:'));
     });
 
     test('encode with special characters', () {
-      final encoded = MermaidUrl.instance.encode(
+      final encoded = MermaidUml.instance.encode(
         'graph TD; A["Hello & World!"] --> B',
       );
       expect(encoded, startsWith('pako:'));
@@ -369,7 +396,7 @@ void main() {
     test('all file types generate valid URLs', () {
       final code = 'graph TD; A --> B';
       for (final type in MermaidUmlFileType.values) {
-        final url = MermaidUrl.instance.getUrl(
+        final url = MermaidUml.instance.getUrl(
           code,
           parameters: MermaidUmlParameters(type: type),
         );
@@ -380,7 +407,7 @@ void main() {
 
   group('PlantUML providers', () {
     test('planttext provider URL', () {
-      final url = PlantUmlUrl.instance
+      final url = PlantUml.instance
           .getUrl(
             'test',
             parameters: const PlantUmlParameters(
@@ -392,7 +419,7 @@ void main() {
     });
 
     test('plantuml provider URL', () {
-      final url = PlantUmlUrl.instance
+      final url = PlantUml.instance
           .getUrl(
             'test',
             parameters: const PlantUmlParameters(
@@ -406,7 +433,7 @@ void main() {
 
   group('PlantUML themes with external dependencies', () {
     test('darkula theme includes external dependency', () {
-      final encoded = PlantUmlUrl.instance.encode(
+      final encoded = PlantUml.instance.encode(
         '@startuml\nAlice -> Bob\n@enduml',
         parameters: const PlantUmlEncodingParameters(
           theme: PlantUMLTheme.darkula,
@@ -417,7 +444,7 @@ void main() {
 
     test('all themes produce valid encoding', () {
       for (final theme in PlantUMLTheme.values) {
-        final encoded = PlantUmlUrl.instance.encode(
+        final encoded = PlantUml.instance.encode(
           '@startuml\nAlice -> Bob\n@enduml',
           parameters: PlantUmlEncodingParameters(theme: theme),
         );
@@ -429,7 +456,7 @@ void main() {
   group('Mermaid themes', () {
     test('all themes produce valid encoding', () {
       for (final theme in MermaidUmlTheme.values) {
-        final encoded = MermaidUrl.instance.encode(
+        final encoded = MermaidUml.instance.encode(
           'graph TD; A --> B',
           parameters: MermaidUmlEncodingParameters(theme: theme),
         );
@@ -439,6 +466,115 @@ void main() {
           reason: 'Theme $theme should encode',
         );
       }
+    });
+  });
+
+  group('PlantUML URL structure and formatting', () {
+    test('getUrl does not have double slashes in path', () {
+      final url = PlantUml.instance.getUrl('Alice -> Bob').url;
+      expect(url, isNot(contains('//svg')));
+      expect(url, isNot(contains('//png')));
+      expect(url, startsWith('https://uml.planttext.com/plantuml/svg/'));
+    });
+
+    test('preserves diagram title without corrupting directives', () {
+      final encoded = PlantUml.instance.encode(
+        '@startuml my_diagram\nAlice -> Bob\n@enduml',
+        parameters: const PlantUmlEncodingParameters(
+          theme: PlantUMLTheme.plain,
+        ),
+      );
+      final decoded = _decodePlantUml(encoded);
+      expect(decoded, contains('@startuml my_diagram\n'));
+      expect(decoded, contains('!theme plain\n'));
+      expect(decoded, isNot(contains('center my_diagram')));
+      expect(decoded, isNot(contains('plain my_diagram')));
+    });
+
+    test('indented @startuml does not create nested @startuml blocks', () {
+      const code = '''
+    @startuml
+    Alice -> Bob : Hello
+    @enduml
+''';
+      final encoded = PlantUml.instance.encode(
+        code,
+        parameters: const PlantUmlEncodingParameters(
+          theme: PlantUMLTheme.plain,
+        ),
+      );
+      final decoded = _decodePlantUml(encoded);
+      expect(RegExp(r'@startuml').allMatches(decoded).length, equals(1));
+      expect(RegExp(r'@enduml').allMatches(decoded).length, equals(1));
+    });
+  });
+
+  group('Mermaid URL structure', () {
+    test('getUrl does not have double slashes in path', () {
+      final url = MermaidUml.instance.getUrl('graph LR; A --> B;').url;
+      expect(url, isNot(contains('//svg')));
+      expect(url, startsWith('https://mermaid.ink/svg/'));
+    });
+  });
+
+  group('Equality and Value Objects', () {
+    test('Color operator == and hashCode', () {
+      final c1 = const Color(0xFF112233);
+      final c2 = const Color(0xFF112233);
+      final c3 = const Color(0xFF445566);
+      expect(c1, equals(c2));
+      expect(c1.hashCode, equals(c2.hashCode));
+      expect(c1, isNot(equals(c3)));
+    });
+
+    test('UmlURL operator ==, hashCode, and cachedBytes', () {
+      final u1 = UmlURL('https://example.com/a.svg', FileType.svg);
+      final u2 = UmlURL('https://example.com/a.svg', FileType.svg);
+      final u3 = UmlURL('https://example.com/b.svg', FileType.svg);
+      final u4 = UmlURL('https://example.com/a.svg', FileType.png);
+
+      expect(u1, equals(u2));
+      expect(u1.hashCode, equals(u2.hashCode));
+      expect(u1, isNot(equals(u3)));
+      expect(u1, isNot(equals(u4)));
+      expect(u1.cachedBytes, isNull);
+    });
+
+    test('SavedFile operator == and hashCode', () {
+      final s1 = const SavedFile(path: '/path/file.png', bytesWritten: 123);
+      final s2 = const SavedFile(path: '/path/file.png', bytesWritten: 123);
+      final s3 = const SavedFile(path: '/path/file.png', bytesWritten: 456);
+      final s4 = const SavedFile(path: '/other/file.png', bytesWritten: 123);
+
+      expect(s1, equals(s2));
+      expect(s1.hashCode, equals(s2.hashCode));
+      expect(s1, isNot(equals(s3)));
+      expect(s1, isNot(equals(s4)));
+    });
+  });
+
+  group('Save & Download Utilities', () {
+    test('saveUml strips redundant file extension', () async {
+      final tempDir = Directory.systemTemp.createTempSync('uml_test_');
+      addTearDown(() => tempDir.deleteSync(recursive: true));
+
+      final savedPng = await saveUml(
+        Uint8List.fromList([1, 2, 3]),
+        fileType: FileType.png,
+        filename: 'my_diagram.png',
+        location: tempDir.path,
+      );
+      expect(savedPng.path, endsWith('my_diagram.png'));
+      expect(savedPng.path, isNot(endsWith('my_diagram.png.png')));
+
+      final savedJpg = await saveUml(
+        Uint8List.fromList([1, 2, 3]),
+        fileType: FileType.jpeg,
+        filename: 'photo.jpg',
+        location: tempDir.path,
+      );
+      expect(savedJpg.path, endsWith('photo.jpeg'));
+      expect(savedJpg.path, isNot(endsWith('photo.jpg.jpeg')));
     });
   });
 }

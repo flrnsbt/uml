@@ -1,10 +1,14 @@
 name: uml
 description: >-
-  Generate PlantUML and Mermaid diagram URLs with customizable themes, colors,
-  and styling. Supports downloading and saving diagrams as SVG, PNG, WebP, or JPEG.
-version: 1.0.0
+  Generate PlantUML and Mermaid diagram URLs with customizable themes, colors, and styling. Supports downloading and saving diagrams as SVG, PNG, WebP, or JPEG.
+version: 1.0.1
 repository: https://github.com/flrnsbt/uml
-topic: [diagram, plantuml, mermaid, uml, visualization]
+topics:
+- diagram
+- plantuml
+- mermaid
+- uml
+- visualization
 
 environment:
   sdk: ^3.13.7

@@ -16,20 +16,22 @@ export 'package:uml/src/mermaid_uml/types/theme.dart';
 ///
 /// Example:
 /// ```dart
-/// final url = MermaidUrl.instance.getUrl(
+/// final url = MermaidUml.instance.getUrl(
 ///   'graph LR; A --> B',
 ///   parameters: const MermaidUmlParameters(type: MermaidUmlFileType.svg),
 /// );
 /// ```
-class MermaidUrl {
-  MermaidUrl._();
-  static MermaidUrl? _instance;
-  /// Returns the singleton instance of [MermaidUrl].
-  static MermaidUrl get instance => _instance ??= MermaidUrl._();
+class MermaidUml extends Uml {
+  MermaidUml._();
+  static MermaidUml? _instance;
+
+  /// Returns the singleton instance of [MermaidUml].
+  static MermaidUml get instance => _instance ??= MermaidUml._();
 
   /// Encodes Mermaid code with optional theme.
   ///
   /// Returns a pako-encoded string suitable for use in Mermaid URLs.
+  @override
   String encode(
     String text, {
     MermaidUmlEncodingParameters parameters =
@@ -53,16 +55,14 @@ class MermaidUrl {
     String code, {
     MermaidUmlParameters parameters = const MermaidUmlParameters(),
   }) {
-    final type = parameters.type ?? MermaidUmlFileType.default_;
+    final type = parameters.type;
     final encodedCode = encode(code, parameters: parameters.encodingParameters);
     String query = '';
     if (type.query != null) {
       query = '?${type.query}';
     }
-    return UmlURL(
-      '${parameters.provider.baseUrl}/${type.path}/$encodedCode$query',
-      type.type,
-    );
+    final base = parameters.provider.baseUrl.replaceAll(RegExp(r'/+$'), '');
+    return UmlURL('$base/${type.path}/$encodedCode$query', type.type);
   }
 }
 
@@ -90,17 +90,20 @@ class MermaidUmlParameters extends UmlParameters<MermaidUmlEncodingParameters> {
   const MermaidUmlParameters({
     this.encodingParameters = const MermaidUmlEncodingParameters(),
     this.provider = MermaidUmlProvider.mermaidink,
-    this.type,
+    this.type = MermaidUmlFileType.svg,
   });
-  @override
+
   /// The encoding-specific parameters for theme selection.
+  @override
   final MermaidUmlEncodingParameters encodingParameters;
 
   /// The Mermaid server provider.
+  @override
   final MermaidUmlProvider provider;
 
   /// The output file type (SVG, PNG, WebP, or JPEG). Defaults to SVG.
-  final MermaidUmlFileType? type;
+  @override
+  final MermaidUmlFileType type;
 
   /// Returns a copy of this [MermaidUmlParameters] with the given fields replaced.
   MermaidUmlParameters copyWith({

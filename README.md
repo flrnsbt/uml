@@ -43,11 +43,11 @@ void main() {
   ''';
 
   // Generate a default SVG URL
-  final url = PlantUmlUrl.instance.getUrl(code);
+  final url = PlantUml.instance.getUrl(code);
   print(url.url);
 
   // Generate with custom styling
-  final styledUrl = PlantUmlUrl.instance.getUrl(
+  final styledUrl = PlantUml.instance.getUrl(
     code,
     parameters: const PlantUmlParameters(
       type: PlantUMLFileType.png,
@@ -76,11 +76,11 @@ void main() {
   const code = 'graph LR; A[Hello] --> B[World]';
 
   // Generate a default SVG URL
-  final url = MermaidUrl.instance.getUrl(code);
+  final url = MermaidUml.instance.getUrl(code);
   print(url.url);
 
   // Generate with dark theme and PNG format
-  final darkUrl = MermaidUrl.instance.getUrl(
+  final darkUrl = MermaidUml.instance.getUrl(
     code,
     parameters: const MermaidUmlParameters(
       type: MermaidUmlFileType.png,
@@ -114,7 +114,7 @@ print('Saved: ${saved.path}');
 
 | Class | Description |
 |-------|-------------|
-| `PlantUmlUrl` | Singleton for generating PlantUML URLs |
+| `PlantUml` | Singleton for generating PlantUML URLs |
 | `PlantUmlParameters` | Provider, file type, and encoding parameters |
 | `PlantUmlEncodingParameters` | Theme, colors, fonts, and block-specific styling |
 | `PlantUMLFileType` | SVG or PNG |
@@ -127,7 +127,7 @@ print('Saved: ${saved.path}');
 
 | Class | Description |
 |-------|-------------|
-| `MermaidUrl` | Singleton for generating Mermaid URLs |
+| `MermaidUml` | Singleton for generating Mermaid URLs |
 | `MermaidUmlParameters` | Provider, file type, and encoding parameters |
 | `MermaidUmlEncodingParameters` | Theme selection |
 | `MermaidUmlFileType` | SVG, PNG, WebP, or JPEG |

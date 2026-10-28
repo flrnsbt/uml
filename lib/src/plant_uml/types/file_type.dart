@@ -5,6 +5,7 @@ import 'package:uml/src/download/download.dart';
 enum PlantUMLFileType implements FileTypeBase {
   /// Scalable Vector Graphics format.
   svg(FileType.svg),
+
   /// Portable Network Graphics format.
   png(FileType.png);
 

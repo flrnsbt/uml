@@ -17,16 +17,17 @@ export 'types/theme.dart';
 ///
 /// Example:
 /// ```dart
-/// final url = PlantUmlUrl.instance.getUrl(
+/// final url = PlantUml.instance.getUrl(
 ///   '@startuml\nAlice -> Bob\n@enduml',
 ///   parameters: const PlantUmlParameters(type: PlantUMLFileType.svg),
 /// );
 /// ```
-class PlantUmlUrl {
-  PlantUmlUrl._();
-  static PlantUmlUrl? _instance;
-  /// Returns the singleton instance of [PlantUmlUrl].
-  static PlantUmlUrl get instance => _instance ??= PlantUmlUrl._();
+class PlantUml extends Uml {
+  PlantUml._();
+  static PlantUml? _instance;
+
+  /// Returns the singleton instance of [PlantUml].
+  static PlantUml get instance => _instance ??= PlantUml._();
 
   static const _plantUml64 =
       '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_';
@@ -34,6 +35,7 @@ class PlantUmlUrl {
   /// Encodes PlantUML code with optional theme and styling.
   ///
   /// Returns a PlantUML-compatible encoded string suitable for use in URLs.
+  @override
   String encode(
     String text, {
     PlantUmlEncodingParameters parameters = const PlantUmlEncodingParameters(),
@@ -86,16 +88,15 @@ class PlantUmlUrl {
   /// Builds a complete [UmlURL] from PlantUML code.
   ///
   /// Applies [parameters] for file type, provider, theme, and styling.
+  @override
   UmlURL getUrl(
     String code, {
     PlantUmlParameters parameters = const PlantUmlParameters(),
   }) {
-    final type = parameters.type ?? PlantUMLFileType.svg;
+    final type = parameters.type;
     final encodedCode = encode(code, parameters: parameters.encodingParameters);
-    return UmlURL(
-      '${parameters.provider.baseUrl}/${type.name}/$encodedCode',
-      type.type,
-    );
+    final base = parameters.provider.baseUrl.replaceAll(RegExp(r'/+$'), '');
+    return UmlURL('$base/${type.name}/$encodedCode', type.type);
   }
 
   String _encodePlantUml(String text) {
@@ -105,25 +106,15 @@ class PlantUmlUrl {
   }
 
   String _encode64(List<int> data) {
-    String encodeChunk(int c1, int c2, int c3) {
-      final b1 = c1 >> 2;
-      final b2 = ((c1 & 0x3) << 4) | (c2 >> 4);
-      final b3 = ((c2 & 0xF) << 2) | (c3 >> 6);
-      final b4 = c3 & 0x3F;
-      final sb = StringBuffer();
-      sb.write(_plantUml64[b1]);
-      sb.write(_plantUml64[b2]);
-      sb.write(_plantUml64[b3]);
-      sb.write(_plantUml64[b4]);
-      return sb.toString();
-    }
-
     final sb = StringBuffer();
     for (var i = 0; i < data.length; i += 3) {
       final c1 = data[i];
       final c2 = i + 1 < data.length ? data[i + 1] : 0;
       final c3 = i + 2 < data.length ? data[i + 2] : 0;
-      sb.write(encodeChunk(c1, c2, c3));
+      sb.write(_plantUml64[c1 >> 2]);
+      sb.write(_plantUml64[((c1 & 0x3) << 4) | (c2 >> 4)]);
+      sb.write(_plantUml64[((c2 & 0xF) << 2) | (c3 >> 6)]);
+      sb.write(_plantUml64[c3 & 0x3F]);
     }
     return sb.toString();
   }
@@ -170,73 +161,7 @@ class PlantUmlUrl {
     Color? classBorderColor,
     TextAlign textAlign = TextAlign.center,
   }) {
-    String insertAfterStartuml(String code, String snippet) {
-      final startumlRegex = RegExp(r'^@startuml', multiLine: true);
-      final match = startumlRegex.firstMatch(code);
-      if (match != null) {
-        final insertIndex = match.end; // right after @startuml
-        return '${code.substring(0, insertIndex)}\n$snippet${code.substring(insertIndex)}';
-      }
-      // No @startuml found: wrap diagram
-      return '@startuml\n$snippet\n$code\n@enduml';
-    }
-
-    // --- Helper: merge block params ---
-    String mergeBlock(
-      String blockName,
-      Map<String, String> newParams,
-      String code,
-    ) {
-      final blockRegex = RegExp(
-        r'^skinparam\s+' +
-            RegExp.escape(blockName) +
-            r'\s*\{\s*([\s\S]*?)\s*\}',
-        multiLine: true,
-      );
-      final match = blockRegex.firstMatch(code);
-      if (match != null) {
-        final existingBlock = match.group(1)!;
-        final existingKeys = <String>{};
-        final updatedBlock = StringBuffer(existingBlock.trimRight());
-
-        for (final line in existingBlock.split('\n')) {
-          final kv = line.trim().split(RegExp(r'\s+'));
-          if (kv.isNotEmpty) {
-            existingKeys.add(kv.first);
-          }
-        }
-
-        newParams.forEach((key, value) {
-          if (!existingKeys.contains(key)) {
-            updatedBlock.writeln('  $key $value');
-          }
-        });
-
-        return code.replaceFirst(
-          match.group(0)!,
-          'skinparam $blockName {\n${updatedBlock.toString().trimRight()}\n}',
-        );
-      } else {
-        return insertAfterStartuml(
-          code,
-          'skinparam $blockName {\n${newParams.entries.map((e) => '  ${e.key} ${e.value}').join('\n')}\n}',
-        );
-      }
-    }
-
-    // --- Helper: merge single-line params ---
-    String mergeSingle(String key, String value, String code) {
-      // Use multiLine: true instead of (?m)
-      final regex = RegExp(
-        r'^\s*' + RegExp.escape(key) + r'\s+',
-        multiLine: true,
-      );
-      if (regex.hasMatch(code)) {
-        // Already exists → don't override
-        return code;
-      }
-      return insertAfterStartuml(code, '$key $value');
-    }
+    var result = code;
 
     // --- Build all blocks ---
     final Map<String, Map<String, String>> blocks = {};
@@ -252,7 +177,11 @@ class PlantUmlUrl {
       if (bg != null) params['BackgroundColor'] = bg.toHex();
       if (font != null) params['FontColor'] = font.toHex();
       if (border != null) params['BorderColor'] = border.toHex();
-      if (round != null) params['RoundCorner'] = round.toStringAsFixed(2);
+      if (round != null) {
+        params['RoundCorner'] = round == round.roundToDouble()
+            ? round.toInt().toString()
+            : round.toString();
+      }
       if (params.isNotEmpty) {
         blocks[name] = params;
       }
@@ -314,103 +243,134 @@ class PlantUmlUrl {
       border: classBorderColor,
     );
 
-    // --- Merge into code ---
-    String newCode = code;
-
-    // Single-line params
+    // --- Collect single-line params ---
+    final singleParams = <String, String>{};
     if (fontSize != null) {
-      newCode = mergeSingle(
-        'skinparam defaultFontSize',
-        fontSize.toInt().toString(),
-        newCode,
-      );
+      singleParams['skinparam defaultFontSize'] = fontSize.toInt().toString();
     }
     if (backgroundColor != null) {
-      newCode = mergeSingle(
-        'skinparam backgroundColor',
-        backgroundColor.toHex(),
-        newCode,
-      );
+      singleParams['skinparam backgroundColor'] = backgroundColor.toHex();
     }
     if (fontColor != null) {
-      newCode = mergeSingle(
-        'skinparam defaultFontColor',
-        fontColor.toHex(),
-        newCode,
-      );
+      singleParams['skinparam defaultFontColor'] = fontColor.toHex();
     }
     if (activityStartColor != null) {
-      newCode = mergeSingle(
-        'skinparam activityStartColor',
-        activityStartColor.toHex(),
-        newCode,
-      );
+      singleParams['skinparam activityStartColor'] = activityStartColor.toHex();
     }
     if (activityEndColor != null) {
-      newCode = mergeSingle(
-        'skinparam activityEndColor',
-        activityEndColor.toHex(),
-        newCode,
-      );
+      singleParams['skinparam activityEndColor'] = activityEndColor.toHex();
     }
     if (activityDiamondBackgroundColor != null) {
-      newCode = mergeSingle(
-        'skinparam activityDiamondBackgroundColor',
-        activityDiamondBackgroundColor.toHex(),
-        newCode,
-      );
+      singleParams['skinparam activityDiamondBackgroundColor'] =
+          activityDiamondBackgroundColor.toHex();
     }
     if (arrowColor != null) {
-      newCode = mergeSingle(
-        'skinparam ArrowColor',
-        arrowColor.toHex(),
-        newCode,
-      );
+      singleParams['skinparam ArrowColor'] = arrowColor.toHex();
     }
     if (activityEndBackgroundColor != null) {
-      newCode = mergeSingle(
-        'skinparam activityEndBackgroundColor',
-        activityEndBackgroundColor.toHex(),
-        newCode,
-      );
+      singleParams['skinparam activityEndBackgroundColor'] =
+          activityEndBackgroundColor.toHex();
     }
     if (activityEndBorderColor != null) {
-      newCode = mergeSingle(
-        'skinparam activityEndBorderColor',
-        activityEndBorderColor.toHex(),
-        newCode,
-      );
+      singleParams['skinparam activityEndBorderColor'] = activityEndBorderColor
+          .toHex();
     }
+    singleParams['skinparam defaultTextAlignment'] = textAlign.name;
 
-    newCode = mergeSingle(
-      'skinparam defaultTextAlignment',
-      textAlign.name,
-      newCode,
-    );
+    final directivesToInsert = <String>[];
 
-    // Merge all block params
-    blocks.forEach((blockName, params) {
-      newCode = mergeBlock(blockName, params, newCode);
-    });
-
-    // Theme
+    // 1. Theme directives
     if (theme != null) {
-      if (!newCode.contains('!theme')) {
-        String themeSnippet = '';
+      final hasTheme = RegExp(
+        r'^[ \t]*!theme\b',
+        multiLine: true,
+      ).hasMatch(result);
+      if (!hasTheme) {
         if (theme.externalDependency != null) {
-          themeSnippet = '!include ${theme.externalDependency}\n';
+          directivesToInsert.add('!include ${theme.externalDependency}');
         }
-        themeSnippet += '!theme ${theme.name}';
-        newCode = insertAfterStartuml(newCode, themeSnippet);
+        directivesToInsert.add('!theme ${theme.name}');
       }
     }
 
-    // Ensure @startuml wrapping
-    if (!newCode.trimLeft().startsWith('@startuml')) {
-      newCode = '@startuml\n$newCode\n@enduml';
+    // 2. Single-line skinparams
+    singleParams.forEach((key, val) {
+      final regex = RegExp(
+        r'^[ \t]*' + RegExp.escape(key) + r'\b',
+        multiLine: true,
+      );
+      if (!regex.hasMatch(result)) {
+        directivesToInsert.add('$key $val');
+      }
+    });
+
+    // 3. Block skinparams
+    blocks.forEach((blockName, params) {
+      final blockRegex = RegExp(
+        r'^[ \t]*skinparam\s+' +
+            RegExp.escape(blockName) +
+            r'\s*\{\s*([\s\S]*?)\s*\}',
+        multiLine: true,
+      );
+      final match = blockRegex.firstMatch(result);
+      if (match != null) {
+        final existingBlock = match.group(1)!;
+        final existingKeys = <String>{};
+        final updatedBlock = StringBuffer(existingBlock.trimRight());
+        for (final line in existingBlock.split('\n')) {
+          final kv = line.trim().split(RegExp(r'\s+'));
+          if (kv.isNotEmpty) {
+            existingKeys.add(kv.first);
+          }
+        }
+        params.forEach((key, value) {
+          if (!existingKeys.contains(key)) {
+            updatedBlock.writeln();
+            updatedBlock.write('  $key $value');
+          }
+        });
+        result = result.replaceFirst(
+          match.group(0)!,
+          'skinparam $blockName {\n${updatedBlock.toString().trimRight()}\n}',
+        );
+      } else {
+        final blockStr = StringBuffer('skinparam $blockName {');
+        params.forEach((k, v) => blockStr.write('\n  $k $v'));
+        blockStr.write('\n}');
+        directivesToInsert.add(blockStr.toString());
+      }
+    });
+
+    final startumlRegex = RegExp(
+      r'^[ \t]*@startuml[^\r\n]*\r?\n?',
+      multiLine: true,
+    );
+    final startumlMatch = startumlRegex.firstMatch(result);
+
+    if (startumlMatch != null) {
+      if (directivesToInsert.isNotEmpty) {
+        final insertIndex = startumlMatch.end;
+        final prefix = result.substring(0, insertIndex);
+        final suffix = result.substring(insertIndex);
+        final separator = prefix.endsWith('\n') ? '' : '\n';
+        result = '$prefix$separator${directivesToInsert.join('\n')}\n$suffix';
+      }
+    } else {
+      if (directivesToInsert.isNotEmpty) {
+        result = '@startuml\n${directivesToInsert.join('\n')}\n$result';
+      } else {
+        result = '@startuml\n$result';
+      }
     }
 
-    return newCode;
+    if (!RegExp(r'^[ \t]*@enduml\b', multiLine: true).hasMatch(result)) {
+      if (!result.endsWith('\n')) {
+        result = '$result\n';
+      }
+      result = '$result@enduml';
+    }
+
+    return result;
   }
 }
 
@@ -464,80 +424,118 @@ class PlantUmlEncodingParameters extends UmlEncodingParameters {
 
   /// The PlantUML theme to apply (e.g., Darkula, Spacelab).
   final PlantUMLTheme? theme;
+
   /// The overall background color of the diagram.
   final Color? backgroundColor;
+
   /// The default font color for all text elements.
   final Color? fontColor;
+
   /// The text alignment for diagram elements.
   final TextAlign textAlign;
-  /// The corner radius for activity nodes, as a value between 0.0 and 1.0.
+
+  /// The corner radius in pixels for activity nodes.
   final double? activityRoundCorner;
+
   /// The font size for all text elements.
   final double? fontSize;
+
   /// The font color for note elements.
   final Color? noteFontColor;
+
   /// The background color for note elements.
   final Color? noteBackgroundColor;
+
   /// The border color for note elements.
   final Color? noteBorderColor;
+
   /// The background color for activity nodes.
   final Color? activityBackgroundColor;
+
   /// The font color for activity nodes.
   final Color? activityFontColor;
+
   /// The border color for activity nodes.
   final Color? activityBorderColor;
+
   /// The background color for rectangle elements.
   final Color? rectangleBackgroundColor;
+
   /// The font color for rectangle elements.
   final Color? rectangleFontColor;
+
   /// The border color for rectangle elements.
   final Color? rectangleBorderColor;
+
   /// The background color for partition elements.
   final Color? partitionBackgroundColor;
+
   /// The font color for partition elements.
   final Color? partitionFontColor;
+
   /// The border color for partition elements.
   final Color? partitionBorderColor;
+
   /// The color of the start node in activity diagrams.
   final Color? activityStartColor;
+
   /// The color of the end node in activity diagrams.
   final Color? activityEndColor;
+
   /// The background color of the end node in activity diagrams.
   final Color? activityEndBackgroundColor;
+
   /// The border color of the end node in activity diagrams.
   final Color? activityEndBorderColor;
+
   /// The background color of decision diamond nodes in activity diagrams.
   final Color? activityDiamondBackgroundColor;
+
   /// The color of arrows and connectors between elements.
   final Color? arrowColor;
+
   /// The background color for component elements.
   final Color? componentBackgroundColor;
+
   /// The font color for component elements.
   final Color? componentFontColor;
+
   /// The border color for component elements.
   final Color? componentBorderColor;
+
   /// The background color for interface elements.
   final Color? interfaceBackgroundColor;
+
   /// The font color for interface elements.
   final Color? interfaceFontColor;
+
   /// The border color for interface elements.
   final Color? interfaceBorderColor;
+
   /// The background color for package elements.
   final Color? packageBackgroundColor;
+
   /// The font color for package elements.
   final Color? packageFontColor;
+
   /// The border color for package elements.
   final Color? packageBorderColor;
+
   /// The background color for sequence diagram lifelines.
   final Color? sequenceBackgroundColor;
+
   /// The font color for sequence diagram elements.
   final Color? sequenceFontColor;
+
   /// The border color for sequence diagram elements.
   final Color? sequenceBorderColor;
+
   /// The background color for class elements.
   final Color? classBackgroundColor;
+
   /// The font color for class elements.
   final Color? classFontColor;
+
   /// The border color for class elements.
   final Color? classBorderColor;
 
@@ -645,17 +643,20 @@ class PlantUmlParameters extends UmlParameters<PlantUmlEncodingParameters> {
   const PlantUmlParameters({
     this.encodingParameters = const PlantUmlEncodingParameters(),
     this.provider = PlantUMLProvider.planttext,
-    this.type,
+    this.type = PlantUMLFileType.svg,
   });
-  @override
+
   /// The encoding-specific parameters for theme, colors, and styling.
+  @override
   final PlantUmlEncodingParameters encodingParameters;
 
   /// The PlantUML server provider.
+  @override
   final PlantUMLProvider provider;
 
   /// The output file type (SVG or PNG). Defaults to SVG.
-  final PlantUMLFileType? type;
+  @override
+  final PlantUMLFileType type;
 
   /// Returns a copy of this [PlantUmlParameters] with the given fields replaced.
   PlantUmlParameters copyWith({

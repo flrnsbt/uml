@@ -13,8 +13,8 @@ Future<Uint8List> downloadUmlURL(String url) async {
       'Failed to download: ${response.status} ${response.statusText}',
     );
   }
-  final jsBytes = await response.bytes().toDart;
-  return jsBytes.toDart;
+  final buffer = await response.arrayBuffer().toDart;
+  return buffer.toDart.asUint8List();
 }
 
 /// Saves a UML diagram by triggering a browser download on web platforms.
@@ -29,7 +29,14 @@ Future<SavedFile> saveUml(
   // Use FileType to determine the file extension
   final extension = fileType.name;
 
-  final name = filename ?? 'diagram';
+  // Build the filename, stripping redundant extension if already present
+  var name = filename ?? 'diagram';
+  final extWithDot = '.$extension';
+  if (name.toLowerCase().endsWith(extWithDot)) {
+    name = name.substring(0, name.length - extWithDot.length);
+  } else if (extension == 'jpeg' && name.toLowerCase().endsWith('.jpg')) {
+    name = name.substring(0, name.length - 4);
+  }
   final fileName = '$name.$extension';
 
   // Trigger browser download using a Blob and anchor element

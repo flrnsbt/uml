@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'dart:io';
 
 import 'package:uml/uml.dart';
@@ -29,25 +31,25 @@ void plantUmlExamples() {
   ''';
 
   // 1. Default SVG URL (planttext provider)
-  final defaultUrl = PlantUmlUrl.instance.getUrl(code);
+  final defaultUrl = PlantUml.instance.getUrl(code);
   print('Default SVG: ${defaultUrl.url}');
 
   // 2. PNG export
-  final pngUrl = PlantUmlUrl.instance.getUrl(
+  final pngUrl = PlantUml.instance.getUrl(
     code,
     parameters: const PlantUmlParameters(type: PlantUMLFileType.png),
   );
   print('PNG: ${pngUrl.url}');
 
   // 3. Different provider (plantuml.com)
-  final plantumlCom = PlantUmlUrl.instance.getUrl(
+  final plantumlCom = PlantUml.instance.getUrl(
     code,
     parameters: const PlantUmlParameters(provider: PlantUMLProvider.plantuml),
   );
   print('plantuml.com: ${plantumlCom.url}');
 
   // 4. With theme (Darkula)
-  final themedUrl = PlantUmlUrl.instance.getUrl(
+  final themedUrl = PlantUml.instance.getUrl(
     code,
     parameters: const PlantUmlParameters(
       encodingParameters: PlantUmlEncodingParameters(
@@ -58,7 +60,7 @@ void plantUmlExamples() {
   print('Darkula theme: ${themedUrl.url}');
 
   // 5. With custom colors and styling
-  final styledUrl = PlantUmlUrl.instance.getUrl(
+  final styledUrl = PlantUml.instance.getUrl(
     code,
     parameters: const PlantUmlParameters(
       encodingParameters: PlantUmlEncodingParameters(
@@ -75,7 +77,7 @@ void plantUmlExamples() {
   print('Styled: ${styledUrl.url}');
 
   // 6. Block-specific styling (activity, rectangle, class, etc.)
-  final blockStyledUrl = PlantUmlUrl.instance.getUrl(
+  final blockStyledUrl = PlantUml.instance.getUrl(
     code,
     parameters: const PlantUmlParameters(
       encodingParameters: PlantUmlEncodingParameters(
@@ -99,7 +101,7 @@ void plantUmlExamples() {
     type: PlantUMLFileType.svg,
     provider: PlantUMLProvider.planttext,
   );
-  final modifiedUrl = PlantUmlUrl.instance.getUrl(
+  final modifiedUrl = PlantUml.instance.getUrl(
     code,
     parameters: baseParams.copyWith(
       type: PlantUMLFileType.png,
@@ -122,32 +124,32 @@ void mermaidExamples() {
   ''';
 
   // 1. Default SVG
-  final defaultUrl = MermaidUrl.instance.getUrl(code);
+  final defaultUrl = MermaidUml.instance.getUrl(code);
   print('Default SVG: ${defaultUrl.url}');
 
   // 2. PNG export
-  final pngUrl = MermaidUrl.instance.getUrl(
+  final pngUrl = MermaidUml.instance.getUrl(
     code,
     parameters: const MermaidUmlParameters(type: MermaidUmlFileType.png),
   );
   print('PNG: ${pngUrl.url}');
 
   // 3. WebP export
-  final webpUrl = MermaidUrl.instance.getUrl(
+  final webpUrl = MermaidUml.instance.getUrl(
     code,
     parameters: const MermaidUmlParameters(type: MermaidUmlFileType.webp),
   );
   print('WebP: ${webpUrl.url}');
 
   // 4. JPEG export
-  final jpegUrl = MermaidUrl.instance.getUrl(
+  final jpegUrl = MermaidUml.instance.getUrl(
     code,
     parameters: const MermaidUmlParameters(type: MermaidUmlFileType.jpeg),
   );
   print('JPEG: ${jpegUrl.url}');
 
   // 5. With dark theme
-  final darkUrl = MermaidUrl.instance.getUrl(
+  final darkUrl = MermaidUml.instance.getUrl(
     code,
     parameters: const MermaidUmlParameters(
       encodingParameters: MermaidUmlEncodingParameters(
@@ -158,7 +160,7 @@ void mermaidExamples() {
   print('Dark theme: ${darkUrl.url}');
 
   // 6. With forest theme
-  final forestUrl = MermaidUrl.instance.getUrl(
+  final forestUrl = MermaidUml.instance.getUrl(
     code,
     parameters: const MermaidUmlParameters(
       encodingParameters: MermaidUmlEncodingParameters(
@@ -170,7 +172,7 @@ void mermaidExamples() {
 
   // 7. Using copyWith
   final baseParams = const MermaidUmlParameters(type: MermaidUmlFileType.svg);
-  final modifiedUrl = MermaidUrl.instance.getUrl(
+  final modifiedUrl = MermaidUml.instance.getUrl(
     code,
     parameters: baseParams.copyWith(
       type: MermaidUmlFileType.png,
@@ -197,7 +199,7 @@ Future<void> downloadAndSaveExample() async {
   ''';
 
   // Generate a URL
-  final umlUrl = PlantUmlUrl.instance.getUrl(
+  final umlUrl = PlantUml.instance.getUrl(
     code,
     parameters: const PlantUmlParameters(type: PlantUMLFileType.png),
   );
@@ -223,10 +225,10 @@ Future<void> downloadAndSaveExample() async {
   print('Saved to location: ${savedWithLocation.path}');
 
   // Mermaid save example
-  final mermaidUrl = MermaidUrl.instance.getUrl(
+  final mermaidUml = MermaidUml.instance.getUrl(
     'graph LR; A --> B',
     parameters: const MermaidUmlParameters(type: MermaidUmlFileType.svg),
   );
-  final mermaidSaved = await mermaidUrl.save(filename: 'mermaid-flow');
+  final mermaidSaved = await mermaidUml.save(filename: 'mermaid-flow');
   print('Mermaid saved: ${mermaidSaved.path}');
 }

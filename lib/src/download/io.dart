@@ -30,12 +30,19 @@ String _getDefaultPath() {
   switch (Platform.operatingSystem) {
     case 'macos':
     case 'darwin':
-      return p.join(Platform.environment['HOME'] ?? '', 'Downloads');
     case 'linux':
-      return p.join(Platform.environment['HOME'] ?? '', 'Downloads');
+      final home = Platform.environment['HOME'];
+      if (home != null && home.isNotEmpty) {
+        return p.join(home, 'Downloads');
+      }
+      return Directory.current.path;
     case 'windows':
-      final appData = Platform.environment['USERPROFILE'] ?? '';
-      return p.join(appData, 'Downloads');
+      final userProfile =
+          Platform.environment['USERPROFILE'] ?? Platform.environment['HOME'];
+      if (userProfile != null && userProfile.isNotEmpty) {
+        return p.join(userProfile, 'Downloads');
+      }
+      return Directory.current.path;
     default:
       return Directory.current.path;
   }
@@ -51,8 +58,15 @@ Future<SavedFile> saveUml(
   // Use FileType to determine the file extension
   final extension = fileType.name;
 
-  // Build the full file path
-  final name = filename ?? 'diagram';
+  // Build the full file path, stripping redundant extension if already present
+  var name = filename ?? 'diagram';
+  final extWithDot = '.$extension';
+  if (name.toLowerCase().endsWith(extWithDot)) {
+    name = name.substring(0, name.length - extWithDot.length);
+  } else if (extension == 'jpeg' && name.toLowerCase().endsWith('.jpg')) {
+    name = name.substring(0, name.length - 4);
+  }
+
   final dir = location ?? _getDefaultPath();
   await Directory(dir).create(recursive: true);
   final fullPath = p.join(dir, '$name.$extension');

@@ -5,10 +5,13 @@ import 'package:uml/src/download/download.dart';
 enum MermaidUmlFileType implements FileTypeBase {
   /// Scalable Vector Graphics format.
   svg(FileType.svg, path: 'svg'),
+
   /// Portable Network Graphics format.
   png(FileType.png, query: 'type=png'),
+
   /// WebP image format.
   webp(FileType.webp, query: 'type=webp'),
+
   /// JPEG image format.
   jpeg(FileType.jpeg, query: 'type=jpeg');
 
