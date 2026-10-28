@@ -308,9 +308,7 @@ void main() {
       final code = '@startuml\nAlice -> Bob\n@enduml';
       final encoded = PlantUmlUrl.instance.encode(
         code,
-        parameters: const PlantUmlEncodingParameters(
-          textAlign: TextAlign.left,
-        ),
+        parameters: const PlantUmlEncodingParameters(textAlign: TextAlign.left),
       );
       expect(encoded, isNotEmpty);
     });
@@ -362,7 +360,9 @@ void main() {
     });
 
     test('encode with special characters', () {
-      final encoded = MermaidUrl.instance.encode('graph TD; A["Hello & World!"] --> B');
+      final encoded = MermaidUrl.instance.encode(
+        'graph TD; A["Hello & World!"] --> B',
+      );
       expect(encoded, startsWith('pako:'));
     });
 
@@ -383,8 +383,9 @@ void main() {
       final url = PlantUmlUrl.instance
           .getUrl(
             'test',
-            parameters:
-                const PlantUmlParameters(provider: PlantUMLProvider.planttext),
+            parameters: const PlantUmlParameters(
+              provider: PlantUMLProvider.planttext,
+            ),
           )
           .url;
       expect(url, contains('planttext.com'));
@@ -394,8 +395,9 @@ void main() {
       final url = PlantUmlUrl.instance
           .getUrl(
             'test',
-            parameters:
-                const PlantUmlParameters(provider: PlantUMLProvider.plantuml),
+            parameters: const PlantUmlParameters(
+              provider: PlantUMLProvider.plantuml,
+            ),
           )
           .url;
       expect(url, contains('plantuml.com'));
@@ -431,7 +433,11 @@ void main() {
           'graph TD; A --> B',
           parameters: MermaidUmlEncodingParameters(theme: theme),
         );
-        expect(encoded, startsWith('pako:'), reason: 'Theme $theme should encode');
+        expect(
+          encoded,
+          startsWith('pako:'),
+          reason: 'Theme $theme should encode',
+        );
       }
     });
   });

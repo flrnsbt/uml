@@ -7,10 +7,9 @@ enum FileType { svg, png, webp, jpeg }
 
 /// Result of saving a UML diagram to a file.
 class SavedFile {
+  const SavedFile({required this.path, required this.bytesWritten});
   final String path;
   final int bytesWritten;
-
-  const SavedFile({required this.path, required this.bytesWritten});
 
   @override
   String toString() => 'SavedFile(path: $path, bytes: $bytesWritten)';

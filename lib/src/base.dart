@@ -30,13 +30,13 @@ abstract class FileTypeBase {
 /// Provides convenient methods to download diagram bytes and save them
 /// to a file on disk (native) or trigger a browser download (web).
 class UmlURL {
+  UmlURL(this.url, this.fileType);
+
   /// The full URL of the diagram.
   final String url;
 
   /// The file type of the diagram (SVG, PNG, etc.).
   final FileType fileType;
-
-  UmlURL(this.url, this.fileType);
 
   /// Cached bytes from a previous download.
   Uint8List? _bytes;

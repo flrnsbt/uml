@@ -22,9 +22,9 @@ export 'package:uml/src/mermaid_uml/types/theme.dart';
 /// );
 /// ```
 class MermaidUrl {
+  MermaidUrl._();
   static MermaidUrl? _instance;
   static MermaidUrl get instance => _instance ??= MermaidUrl._();
-  MermaidUrl._();
 
   /// Encodes Mermaid code with optional theme.
   ///
@@ -36,7 +36,7 @@ class MermaidUrl {
   }) {
     final json = jsonEncode({
       'code': text,
-      "mermaid": {"theme": parameters.theme.name},
+      'mermaid': {'theme': parameters.theme.name},
     });
     final bytes = utf8.encode(json);
 
@@ -83,6 +83,11 @@ class MermaidUmlEncodingParameters extends UmlEncodingParameters {
 ///
 /// Wraps [encodingParameters] with a [provider] and optional [type].
 class MermaidUmlParameters extends UmlParameters<MermaidUmlEncodingParameters> {
+  const MermaidUmlParameters({
+    this.encodingParameters = const MermaidUmlEncodingParameters(),
+    this.provider = MermaidUmlProvider.mermaidink,
+    this.type,
+  });
   @override
   final MermaidUmlEncodingParameters encodingParameters;
 
@@ -91,12 +96,6 @@ class MermaidUmlParameters extends UmlParameters<MermaidUmlEncodingParameters> {
 
   /// The output file type (SVG, PNG, WebP, or JPEG). Defaults to SVG.
   final MermaidUmlFileType? type;
-
-  const MermaidUmlParameters({
-    this.encodingParameters = const MermaidUmlEncodingParameters(),
-    this.provider = MermaidUmlProvider.mermaidink,
-    this.type,
-  });
 
   MermaidUmlParameters copyWith({
     MermaidUmlEncodingParameters? encodingParameters,

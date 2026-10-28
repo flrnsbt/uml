@@ -23,13 +23,12 @@ export 'types/theme.dart';
 /// );
 /// ```
 class PlantUmlUrl {
+  PlantUmlUrl._();
   static PlantUmlUrl? _instance;
   static PlantUmlUrl get instance => _instance ??= PlantUmlUrl._();
 
-  PlantUmlUrl._();
-
   static const _plantUml64 =
-      "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_";
+      '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_';
 
   /// Encodes PlantUML code with optional theme and styling.
   ///
@@ -601,6 +600,11 @@ class PlantUmlEncodingParameters extends UmlEncodingParameters {
 ///
 /// Wraps [encodingParameters] with a [provider] and optional [type].
 class PlantUmlParameters extends UmlParameters<PlantUmlEncodingParameters> {
+  const PlantUmlParameters({
+    this.encodingParameters = const PlantUmlEncodingParameters(),
+    this.provider = PlantUMLProvider.planttext,
+    this.type,
+  });
   @override
   final PlantUmlEncodingParameters encodingParameters;
 
@@ -609,12 +613,6 @@ class PlantUmlParameters extends UmlParameters<PlantUmlEncodingParameters> {
 
   /// The output file type (SVG or PNG). Defaults to SVG.
   final PlantUMLFileType? type;
-
-  const PlantUmlParameters({
-    this.encodingParameters = const PlantUmlEncodingParameters(),
-    this.provider = PlantUMLProvider.planttext,
-    this.type,
-  });
 
   /// Returns a copy of this [PlantUmlParameters] with the given fields replaced.
   PlantUmlParameters copyWith({

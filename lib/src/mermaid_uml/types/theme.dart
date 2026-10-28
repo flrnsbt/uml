@@ -5,7 +5,8 @@ enum MermaidUmlTheme {
   dark('dark'),
   neutral('neutral');
 
+  const MermaidUmlTheme(this.name);
+
   /// The theme name used by the Mermaid server.
   final String name;
-  const MermaidUmlTheme(this.name);
 }

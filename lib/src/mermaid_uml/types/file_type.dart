@@ -8,6 +8,8 @@ enum MermaidUmlFileType implements FileTypeBase {
   webp(FileType.webp, query: 'type=webp'),
   jpeg(FileType.jpeg, query: 'type=jpeg');
 
+  const MermaidUmlFileType(this.type, {this.path = 'img', this.query});
+
   /// Returns the first file type (SVG) as the default.
   static MermaidUmlFileType get default_ => values.first;
 
@@ -15,7 +17,7 @@ enum MermaidUmlFileType implements FileTypeBase {
   final String path;
   @override
   final FileType type;
+
   /// An optional query parameter for the URL.
   final String? query;
-  const MermaidUmlFileType(this.type, {this.path = 'img', this.query});
 }
