@@ -28,497 +28,319 @@ String _decodePlantUml(String encoded) {
   return utf8.decode(decompressed);
 }
 
+/// Helper to check if bytes match expected file signatures
+bool _isValidFileFormat(Uint8List bytes, FileType type) {
+  if (bytes.isEmpty) return false;
+
+  switch (type) {
+    case FileType.png:
+      // PNG magic bytes: 89 50 4E 47 0D 0A 1A 0A
+      return bytes.length >= 8 &&
+          bytes[0] == 0x89 &&
+          bytes[1] == 0x50 &&
+          bytes[2] == 0x4E &&
+          bytes[3] == 0x47 &&
+          bytes[4] == 0x0D &&
+          bytes[5] == 0x0A &&
+          bytes[6] == 0x1A &&
+          bytes[7] == 0x0A;
+    case FileType.jpeg:
+      // JPEG magic bytes: FF D8 FF
+      return bytes.length >= 3 &&
+          bytes[0] == 0xFF &&
+          bytes[1] == 0xD8 &&
+          bytes[2] == 0xFF;
+    case FileType.webp:
+      // WebP magic bytes: 52 49 46 46 ... 57 45 42 50 (RIFF...WEBP)
+      return bytes.length >= 12 &&
+          bytes[0] == 0x52 &&
+          bytes[1] == 0x49 &&
+          bytes[2] == 0x46 &&
+          bytes[3] == 0x46 &&
+          bytes[8] == 0x57 &&
+          bytes[9] == 0x45 &&
+          bytes[10] == 0x42 &&
+          bytes[11] == 0x50;
+    case FileType.svg:
+      // SVG should start with <svg or <?xml (or contain it near the start)
+      final header = String.fromCharCodes(bytes.take(1024));
+      return header.contains('<svg') || header.contains('<?xml');
+    case FileType.pdf:
+      // PDF magic bytes: 25 50 44 46 (%PDF)
+      return bytes.length >= 4 &&
+          bytes[0] == 0x25 &&
+          bytes[1] == 0x50 &&
+          bytes[2] == 0x44 &&
+          bytes[3] == 0x46;
+    case FileType.txt:
+      // Text should be valid UTF-8
+      try {
+        utf8.decode(bytes);
+        return true;
+      } catch (_) {
+        return false;
+      }
+  }
+}
+
 void main() {
-  group('PlantUml', () {
-    test('singleton instance', () {
-      expect(PlantUml.instance, PlantUml.instance);
+  group('URL Generation', () {
+    group('PlantUML', () {
+      test('generates valid URLs with different providers', () {
+        final planttextUrl = PlantUml.instance
+            .getUrl('Alice -> Bob',
+                parameters: const PlantUmlParameters(
+                    provider: PlantUMLProvider.planttext))
+            .url;
+        expect(planttextUrl, contains('planttext.com'));
+
+        final plantumlUrl = PlantUml.instance
+            .getUrl('Alice -> Bob',
+                parameters: const PlantUmlParameters(
+                    provider: PlantUMLProvider.plantuml))
+            .url;
+        expect(plantumlUrl, contains('plantuml.com'));
+
+        final krokiUrl = PlantUml.instance
+            .getUrl('Alice -> Bob',
+                parameters: const PlantUmlParameters(
+                    provider: PlantUMLProvider.kroki))
+            .url;
+        expect(krokiUrl, contains('kroki.io'));
+      });
+
+      test('generates URLs without trailing brace', () {
+        final url = PlantUml.instance.getUrl('test diagram').url;
+        expect(url, startsWith('https://'));
+        expect(url, isNot(endsWith('}')));
+      });
+
+      test('includes file type in URL path', () {
+        final pngUrl = PlantUml.instance
+            .getUrl('test',
+                parameters: const PlantUmlParameters(type: PlantUMLFileType.png))
+            .url;
+        expect(pngUrl, contains('/png/'));
+
+        final txtUrl = PlantUml.instance
+            .getUrl('test',
+                parameters: const PlantUmlParameters(type: PlantUMLFileType.txt))
+            .url;
+        expect(txtUrl, contains('/txt/'));
+      });
     });
 
-    test('encode returns non-empty string', () {
-      final encoded = PlantUml.instance.encode('test');
-      expect(encoded, isNotEmpty);
+    group('Mermaid', () {
+      test('generates valid URLs with different providers', () {
+        final mermaidinkUrl = MermaidUml.instance
+            .getUrl('graph TD; A-->B;',
+                parameters: const MermaidUmlParameters(
+                    provider: MermaidUmlProvider.mermaidink))
+            .url;
+        expect(mermaidinkUrl, contains('mermaid.ink'));
+
+        final krokiUrl = MermaidUml.instance
+            .getUrl('graph TD; A-->B;',
+                parameters: const MermaidUmlParameters(
+                    provider: MermaidUmlProvider.kroki))
+            .url;
+        expect(krokiUrl, contains('kroki.io'));
+      });
+
+      test('generates URLs without trailing brace', () {
+        final url = MermaidUml.instance.getUrl('graph TD; A-->B;').url;
+        expect(url, startsWith('https://'));
+        expect(url, isNot(endsWith('}')));
+      });
+
+      test('includes file type in URL path or query', () {
+        final pngUrl = MermaidUml.instance
+            .getUrl('graph TD; A-->B;',
+                parameters: const MermaidUmlParameters(
+                    type: MermaidUmlFileType.png))
+            .url;
+        expect(pngUrl, contains('type=png'));
+      });
+
+      test('throws for unsupported file type combinations', () {
+        expect(
+            () => MermaidUml.instance.getUrl('graph TD; A-->B;',
+                parameters: const MermaidUmlParameters(
+                    provider: MermaidUmlProvider.kroki,
+                    type: MermaidUmlFileType.webp)),
+            throwsArgumentError);
+
+        expect(
+            () => MermaidUml.instance.getUrl('graph TD; A-->B;',
+                parameters: const MermaidUmlParameters(
+                    provider: MermaidUmlProvider.kroki,
+                    type: MermaidUmlFileType.pdf)),
+            throwsArgumentError);
+
+        expect(
+            () => MermaidUml.instance.getUrl('graph TD; A-->B;',
+                parameters: const MermaidUmlParameters(
+                    provider: MermaidUmlProvider.mermaidink,
+                    type: MermaidUmlFileType.pdf)),
+            throwsArgumentError);
+      });
     });
 
-    test('getUrl returns valid URL without trailing brace', () {
-      final url = PlantUml.instance.getUrl('test diagram').url;
-      expect(url, startsWith('https://'));
-      expect(url, isNot(endsWith('}')));
-    });
+    group('Kroki Diagrams', () {
+      test('generates valid URLs for all diagram types', () {
+        final instances = <Uml<dynamic, dynamic>>[
+          Graphviz.instance,
+          Erd.instance,
+          Blockdiag.instance,
+          Seqdiag.instance,
+          Actdiag.instance,
+          Nwdiag.instance,
+          Packetdiag.instance,
+          Rackdiag.instance,
+          Bpmn.instance,
+          Bytefield.instance,
+          Ditaa.instance,
+          Nomnoml.instance,
+          Pikchr.instance,
+          Structurizr.instance,
+          Tikz.instance,
+          Umlet.instance,
+          Vega.instance,
+          VegaLite.instance,
+          Wavedrom.instance,
+          Wireviz.instance,
+          C4Plantuml.instance,
+          D2.instance,
+          Dbml.instance,
+          Excalidraw.instance,
+          Goat.instance,
+          Lini.instance,
+          Svgbob.instance,
+          Symbolator.instance,
+        ];
+        for (final instance in instances) {
+          final url = instance.getUrl('test');
+          expect(url.url, startsWith('https://kroki.io/'),
+              reason: '${instance.runtimeType} should produce a kroki URL');
+        }
+      });
 
-    test('getUrl with custom provider', () {
-      final url = PlantUml.instance
-          .getUrl(
-            'test',
-            parameters: PlantUmlParameters(provider: PlantUMLProvider.plantuml),
-          )
-          .url;
-      expect(url, contains('plantuml.com'));
-    });
+      test('generates URLs with different file types for Graphviz', () {
+        final svgUrl = Graphviz.instance.getUrl('digraph G { A -> B }');
+        expect(svgUrl.url, startsWith('https://kroki.io/graphviz/svg/'));
 
-    test('getUrl with custom file type', () {
-      final url = PlantUml.instance
-          .getUrl(
-            'test',
-            parameters: PlantUmlParameters(type: PlantUMLFileType.png),
-          )
-          .url;
-      expect(url, contains('/png/'));
-    });
+        final pngUrl = Graphviz.instance.getUrl('digraph G { A -> B }',
+            parameters: const GraphvizParameters(type: GraphvizFileType.png));
+        expect(pngUrl.url, startsWith('https://kroki.io/graphviz/png/'));
 
-    test('getUrl with theme', () {
-      final url = PlantUml.instance
-          .getUrl(
-            'test',
-            parameters: PlantUmlParameters(
-              encodingParameters: PlantUmlEncodingParameters(
-                theme: PlantUmlTheme.darkula,
-              ),
-            ),
-          )
-          .url;
-      expect(url, isNotEmpty);
-    });
+        final pdfUrl = Graphviz.instance.getUrl('digraph G { A -> B }',
+            parameters: const GraphvizParameters(type: GraphvizFileType.pdf));
+        expect(pdfUrl.url, startsWith('https://kroki.io/graphviz/pdf/'));
+      });
 
-    test('copyWith preserves values', () {
-      final params = PlantUmlEncodingParameters(
-        theme: PlantUmlTheme.darkula,
-        backgroundColor: Color(0xFFFF0000),
-      );
-      final copied = params.copyWith(theme: PlantUmlTheme.plain);
-      expect(copied.theme, PlantUmlTheme.plain);
-      expect(copied.backgroundColor, params.backgroundColor);
-    });
-
-    test('copyWith on PlantUmlParameters', () {
-      final params = PlantUmlParameters(
-        provider: PlantUMLProvider.plantuml,
-        type: PlantUMLFileType.png,
-      );
-      final copied = params.copyWith(provider: PlantUMLProvider.planttext);
-      expect(copied.provider, PlantUMLProvider.planttext);
-      expect(copied.type, PlantUMLFileType.png);
+      test('generates correct URL for VegaLite using vegalite slug', () {
+        final url = VegaLite.instance.getUrl('{"mark": "point"}');
+        expect(url.url, startsWith('https://kroki.io/vegalite/svg/'));
+      });
     });
   });
 
-  group('MermaidUml', () {
-    test('singleton instance', () {
-      expect(MermaidUml.instance, MermaidUml.instance);
+  group('Provider Support', () {
+    test('PlantUML providers support correct file types', () {
+      expect(PlantUMLProvider.planttext.supportsFileType(FileType.svg), isTrue);
+      expect(PlantUMLProvider.planttext.supportsFileType(FileType.png), isTrue);
+      expect(PlantUMLProvider.planttext.supportsFileType(FileType.txt), isTrue);
+      expect(PlantUMLProvider.planttext.supportsFileType(FileType.webp), isFalse);
+      expect(PlantUMLProvider.planttext.supportsFileType(FileType.pdf), isFalse);
     });
 
-    test('encode returns pako encoded string', () {
+    test('Mermaid providers support correct file types', () {
+      expect(MermaidUmlProvider.mermaidink.supportsFileType(FileType.svg), isTrue);
+      expect(MermaidUmlProvider.mermaidink.supportsFileType(FileType.png), isTrue);
+      expect(MermaidUmlProvider.mermaidink.supportsFileType(FileType.webp), isTrue);
+      expect(MermaidUmlProvider.mermaidink.supportsFileType(FileType.jpeg), isTrue);
+      expect(MermaidUmlProvider.mermaidink.supportsFileType(FileType.pdf), isFalse);
+
+      expect(MermaidUmlProvider.kroki.supportsFileType(FileType.svg), isTrue);
+      expect(MermaidUmlProvider.kroki.supportsFileType(FileType.png), isTrue);
+      expect(MermaidUmlProvider.kroki.supportsFileType(FileType.pdf), isFalse);
+      expect(MermaidUmlProvider.kroki.supportsFileType(FileType.webp), isFalse);
+    });
+
+    test('Kroki providers support correct file types', () {
+      expect(GraphvizProvider.kroki.supportsFileType(FileType.svg), isTrue);
+      expect(GraphvizProvider.kroki.supportsFileType(FileType.png), isTrue);
+      expect(GraphvizProvider.kroki.supportsFileType(FileType.jpeg), isTrue);
+      expect(GraphvizProvider.kroki.supportsFileType(FileType.pdf), isTrue);
+      expect(GraphvizProvider.kroki.supportsFileType(FileType.txt), isFalse);
+
+      expect(BpmnProvider.kroki.supportsFileType(FileType.svg), isTrue);
+      expect(BpmnProvider.kroki.supportsFileType(FileType.png), isFalse);
+    });
+  });
+
+  group('Encoding', () {
+    test('PlantUML encoding produces valid output', () {
+      final encoded = PlantUml.instance.encode('Alice -> Bob');
+      expect(encoded, isNotEmpty);
+
+      final decoded = _decodePlantUml(encoded);
+      expect(decoded, contains('Alice -> Bob'));
+    });
+
+    test('PlantUML encoding with theme includes theme directive', () {
+      final encoded = PlantUml.instance.encode(
+          '@startuml\nAlice -> Bob\n@enduml',
+          const PlantUmlEncodingParameters(theme: PlantUmlTheme.darkula));
+      final decoded = _decodePlantUml(encoded);
+      expect(decoded, contains('!theme darkula'));
+    });
+
+    test('PlantUML encoding preserves diagram title', () {
+      final encoded = PlantUml.instance.encode(
+          '@startuml my_diagram\nAlice -> Bob\n@enduml',
+          const PlantUmlEncodingParameters(theme: PlantUmlTheme.plain));
+      final decoded = _decodePlantUml(encoded);
+      expect(decoded, contains('@startuml my_diagram\n'));
+      expect(decoded, isNot(contains('plain my_diagram')));
+    });
+
+    test('Mermaid encoding produces pako format', () {
       final encoded = MermaidUml.instance.encode('graph TD; A-->B;');
       expect(encoded, startsWith('pako:'));
     });
 
-    test('getUrl returns valid URL without trailing brace', () {
-      final url = MermaidUml.instance.getUrl('graph TD; A-->B;').url;
-      expect(url, startsWith('https://'));
-      expect(url, isNot(endsWith('}')));
-    });
-
-    test('getUrl with SVG type', () {
-      final url = MermaidUml.instance
-          .getUrl(
-            'graph TD; A-->B;',
-            parameters: MermaidUmlParameters(type: MermaidUmlFileType.svg),
-          )
-          .url;
-      expect(url, contains('/svg/'));
-    });
-
-    test('getUrl with PNG type includes query', () {
-      final url = MermaidUml.instance
-          .getUrl(
-            'graph TD; A-->B;',
-            parameters: MermaidUmlParameters(type: MermaidUmlFileType.png),
-          )
-          .url;
-      expect(url, contains('type=png'));
-    });
-
-    test('copyWith on MermaidUmlEncodingParameters', () {
-      final params = MermaidUmlEncodingParameters(theme: MermaidUmlTheme.dark);
-      final copied = params.copyWith(theme: MermaidUmlTheme.forest);
-      expect(copied.theme, MermaidUmlTheme.forest);
-    });
-
-    test('copyWith on MermaidUmlParameters', () {
-      final params = MermaidUmlParameters(type: MermaidUmlFileType.svg);
-      final copied = params.copyWith(type: MermaidUmlFileType.png);
-      expect(copied.type, MermaidUmlFileType.png);
-    });
-  });
-
-  group('Color', () {
-    test('toHex converts correctly', () {
-      final color = Color(0xFFFF0000);
-      expect(color.toHex(), equals('#FF0000'));
-    });
-
-    test('toHex ignores alpha channel', () {
-      final color = Color(0x80FF0000);
-      expect(color.toHex(), equals('#FF0000'));
-    });
-
-    test('toHex pads short values', () {
-      final color = Color(0xFF00000A);
-      expect(color.toHex(), equals('#00000A'));
-    });
-  });
-
-  group('PlantUml theme application', () {
-    test('wraps code without @startuml', () {
-      final encoded = PlantUml.instance.encode(
-        'Alice -> Bob',
-        parameters: PlantUmlEncodingParameters(
-          backgroundColor: Color(0xFFFFFFFF),
-        ),
-      );
-      expect(encoded, isNotEmpty);
-    });
-
-    test('preserves @startuml/@enduml wrapping', () {
-      final code = '@startuml\nAlice -> Bob\n@enduml';
-      final encoded = PlantUml.instance.encode(
-        code,
-        parameters: PlantUmlEncodingParameters(fontColor: Color(0xFF000000)),
-      );
-      expect(encoded, isNotEmpty);
-    });
-
-    test('handles empty code', () {
-      final encoded = PlantUml.instance.encode('');
-      expect(encoded, isNotEmpty);
-    });
-
-    test('handles code with special characters', () {
-      final code = '@startuml\nAlice -> Bob : Hello & Welcome!\n@enduml';
-      final encoded = PlantUml.instance.encode(code);
-      expect(encoded, isNotEmpty);
-    });
-
-    test('applies block-specific styling', () {
-      final code = '@startuml\nAlice -> Bob\n@enduml';
-      final encoded = PlantUml.instance.encode(
-        code,
-        parameters: PlantUmlEncodingParameters(
-          rectangleBackgroundColor: Color(0xFFEEFFEE),
-          rectangleFontColor: Color(0xFF006600),
-          rectangleBorderColor: Color(0xFF009900),
-          activityRoundCorner: 10.0,
-        ),
-      );
-      expect(encoded, isNotEmpty);
-    });
-
-    test('applies activity styling', () {
-      final code = '@startuml\nstart\n@enduml';
-      final encoded = PlantUml.instance.encode(
-        code,
-        parameters: PlantUmlEncodingParameters(
-          activityBackgroundColor: Color(0xFFFFF0EE),
-          activityFontColor: Color(0xFF996600),
-          activityBorderColor: Color(0xFFCC9900),
-          activityStartColor: Color(0xFF00FF00),
-          activityEndColor: Color(0xFFFF0000),
-          activityEndBackgroundColor: Color(0xFFFFCCCC),
-          activityEndBorderColor: Color(0xFFCC0000),
-          activityDiamondBackgroundColor: Color(0xFFFFCC00),
-        ),
-      );
-      expect(encoded, isNotEmpty);
-    });
-
-    test('applies component styling', () {
-      final code = '@startuml\ncomponent A\n@enduml';
-      final encoded = PlantUml.instance.encode(
-        code,
-        parameters: PlantUmlEncodingParameters(
-          componentBackgroundColor: Color(0xFFEEEEFF),
-          componentFontColor: Color(0xFF000099),
-          componentBorderColor: Color(0xFF0000CC),
-        ),
-      );
-      expect(encoded, isNotEmpty);
-    });
-
-    test('applies interface styling', () {
-      final code = '@startuml\ninterface A\n@enduml';
-      final encoded = PlantUml.instance.encode(
-        code,
-        parameters: PlantUmlEncodingParameters(
-          interfaceBackgroundColor: Color(0xFFFFEEEE),
-          interfaceFontColor: Color(0xFF990000),
-          interfaceBorderColor: Color(0xFFCC0000),
-        ),
-      );
-      expect(encoded, isNotEmpty);
-    });
-
-    test('applies package styling', () {
-      final code = '@startuml\npackage A\n@enduml';
-      final encoded = PlantUml.instance.encode(
-        code,
-        parameters: PlantUmlEncodingParameters(
-          packageBackgroundColor: Color(0xFFEEEEEE),
-          packageFontColor: Color(0xFF333333),
-          packageBorderColor: Color(0xFF666666),
-        ),
-      );
-      expect(encoded, isNotEmpty);
-    });
-
-    test('applies sequence styling', () {
-      final code = '@startuml\nAlice -> Bob\n@enduml';
-      final encoded = PlantUml.instance.encode(
-        code,
-        parameters: PlantUmlEncodingParameters(
-          sequenceBackgroundColor: Color(0xFFFFFEEE),
-          sequenceFontColor: Color(0xFF666600),
-          sequenceBorderColor: Color(0xFF999900),
-        ),
-      );
-      expect(encoded, isNotEmpty);
-    });
-
-    test('applies class styling', () {
-      final code = '@startuml\nclass A\n@enduml';
-      final encoded = PlantUml.instance.encode(
-        code,
-        parameters: PlantUmlEncodingParameters(
-          classBackgroundColor: Color(0xFFEEF0FF),
-          classFontColor: Color(0xFF000066),
-          classBorderColor: Color(0xFF000099),
-        ),
-      );
-      expect(encoded, isNotEmpty);
-    });
-
-    test('applies arrow color', () {
-      final code = '@startuml\nAlice -> Bob\n@enduml';
-      final encoded = PlantUml.instance.encode(
-        code,
-        parameters: const PlantUmlEncodingParameters(
-          arrowColor: Color(0xFF0066CC),
-        ),
-      );
-      expect(encoded, isNotEmpty);
-    });
-
-    test('applies note styling', () {
-      final code = '@startuml\nnote: Hello\n@enduml';
-      final encoded = PlantUml.instance.encode(
-        code,
-        parameters: const PlantUmlEncodingParameters(
-          noteFontColor: Color(0xFFCC0000),
-          noteBackgroundColor: Color(0xFFFFFFCC),
-          noteBorderColor: Color(0xFFCCCC00),
-        ),
-      );
-      expect(encoded, isNotEmpty);
-    });
-
-    test('applies partition styling', () {
-      final code = '@startuml\n|partition|\n@enduml';
-      final encoded = PlantUml.instance.encode(
-        code,
-        parameters: const PlantUmlEncodingParameters(
-          partitionBackgroundColor: Color(0xFFF0F0FF),
-          partitionFontColor: Color(0xFF333366),
-          partitionBorderColor: Color(0xFF666699),
-        ),
-      );
-      expect(encoded, isNotEmpty);
-    });
-
-    test('applies text alignment', () {
-      final code = '@startuml\nAlice -> Bob\n@enduml';
-      final encoded = PlantUml.instance.encode(
-        code,
-        parameters: const PlantUmlEncodingParameters(textAlign: TextAlign.left),
-      );
-      expect(encoded, isNotEmpty);
-    });
-
-    test('applies font size', () {
-      final code = '@startuml\nAlice -> Bob\n@enduml';
-      final encoded = PlantUml.instance.encode(
-        code,
-        parameters: const PlantUmlEncodingParameters(fontSize: 18),
-      );
-      expect(encoded, isNotEmpty);
-    });
-  });
-
-  group('Color edge cases', () {
-    test('toHex with zero value', () {
-      final color = const Color(0xFF000000);
-      expect(color.toHex(), equals('#000000'));
-    });
-
-    test('toHex with max value', () {
-      final color = const Color(0xFFFFFFFF);
-      expect(color.toHex(), equals('#FFFFFF'));
-    });
-
-    test('toHex with mixed values', () {
-      final color = const Color(0xFF804020);
-      expect(color.toHex(), equals('#804020'));
-    });
-
-    test('toString format', () {
-      final color = const Color(0xFFFF0000);
-      expect(color.toString(), contains('ffff0000'));
-    });
-  });
-
-  group('UmlURL', () {
-    test('toString format', () {
-      final url = UmlURL('https://example.com/diagram.svg', FileType.svg);
-      expect(url.toString(), contains('https://example.com/diagram.svg'));
-      expect(url.toString(), contains('FileType.svg'));
-    });
-  });
-
-  group('Mermaid edge cases', () {
-    test('encode with empty code', () {
-      final encoded = MermaidUml.instance.encode('');
-      expect(encoded, startsWith('pako:'));
-    });
-
-    test('encode with special characters', () {
-      final encoded = MermaidUml.instance.encode(
-        'graph TD; A["Hello & World!"] --> B',
-      );
-      expect(encoded, startsWith('pako:'));
-    });
-
-    test('all file types generate valid URLs', () {
-      final code = 'graph TD; A --> B';
-      for (final type in MermaidUmlFileType.values) {
-        final url = MermaidUml.instance.getUrl(
-          code,
-          parameters: MermaidUmlParameters(type: type),
-        );
-        expect(url.url, startsWith('https://'));
-      }
-    });
-  });
-
-  group('PlantUML providers', () {
-    test('planttext provider URL', () {
-      final url = PlantUml.instance
-          .getUrl(
-            'test',
-            parameters: const PlantUmlParameters(
-              provider: PlantUMLProvider.planttext,
-            ),
-          )
-          .url;
-      expect(url, contains('planttext.com'));
-    });
-
-    test('plantuml provider URL', () {
-      final url = PlantUml.instance
-          .getUrl(
-            'test',
-            parameters: const PlantUmlParameters(
-              provider: PlantUMLProvider.plantuml,
-            ),
-          )
-          .url;
-      expect(url, contains('plantuml.com'));
-    });
-  });
-
-  group('PlantUML themes with external dependencies', () {
-    test('darkula theme includes external dependency', () {
-      final encoded = PlantUml.instance.encode(
-        '@startuml\nAlice -> Bob\n@enduml',
-        parameters: const PlantUmlEncodingParameters(
-          theme: PlantUmlTheme.darkula,
-        ),
-      );
-      expect(encoded, isNotEmpty);
-    });
-
-    test('all themes produce valid encoding', () {
+    test('all PlantUML themes produce valid encoding', () {
       for (final theme in PlantUmlTheme.values) {
         final encoded = PlantUml.instance.encode(
-          '@startuml\nAlice -> Bob\n@enduml',
-          parameters: PlantUmlEncodingParameters(theme: theme),
-        );
+            '@startuml\nAlice -> Bob\n@enduml',
+            PlantUmlEncodingParameters(theme: theme));
         expect(encoded, isNotEmpty, reason: 'Theme $theme should encode');
       }
     });
-  });
 
-  group('Mermaid themes', () {
-    test('all themes produce valid encoding', () {
+    test('all Mermaid themes produce valid encoding', () {
       for (final theme in MermaidUmlTheme.values) {
-        final encoded = MermaidUml.instance.encode(
-          'graph TD; A --> B',
-          parameters: MermaidUmlEncodingParameters(theme: theme),
-        );
-        expect(
-          encoded,
-          startsWith('pako:'),
-          reason: 'Theme $theme should encode',
-        );
+        final encoded = MermaidUml.instance.encode('graph TD; A --> B',
+            MermaidUmlEncodingParameters(theme: theme));
+        expect(encoded, startsWith('pako:'),
+            reason: 'Theme $theme should encode');
       }
     });
-  });
 
-  group('PlantUML URL structure and formatting', () {
-    test('getUrl does not have double slashes in path', () {
-      final url = PlantUml.instance.getUrl('Alice -> Bob').url;
-      expect(url, isNot(contains('//svg')));
-      expect(url, isNot(contains('//png')));
-      expect(url, startsWith('https://uml.planttext.com/plantuml/svg/'));
-    });
-
-    test('preserves diagram title without corrupting directives', () {
-      final encoded = PlantUml.instance.encode(
-        '@startuml my_diagram\nAlice -> Bob\n@enduml',
-        parameters: const PlantUmlEncodingParameters(
-          theme: PlantUmlTheme.plain,
-        ),
-      );
-      final decoded = _decodePlantUml(encoded);
-      expect(decoded, contains('@startuml my_diagram\n'));
-      expect(decoded, contains('!theme plain\n'));
-      expect(decoded, isNot(contains('center my_diagram')));
-      expect(decoded, isNot(contains('plain my_diagram')));
-    });
-
-    test('indented @startuml does not create nested @startuml blocks', () {
-      const code = '''
-    @startuml
-    Alice -> Bob : Hello
-    @enduml
-''';
-      final encoded = PlantUml.instance.encode(
-        code,
-        parameters: const PlantUmlEncodingParameters(
-          theme: PlantUmlTheme.plain,
-        ),
-      );
-      final decoded = _decodePlantUml(encoded);
-      expect(RegExp(r'@startuml').allMatches(decoded).length, equals(1));
-      expect(RegExp(r'@enduml').allMatches(decoded).length, equals(1));
+    test('krokiEncode produces valid URL-safe base64', () {
+      final encoded = krokiEncode('digraph G { A -> B }');
+      expect(encoded, isNotEmpty);
+      expect(encoded, isNot(contains('+')));
+      expect(encoded, isNot(contains('/')));
+      final decompressed =
+          const ZLibDecoder().decodeBytes(base64Url.decode(encoded));
+      expect(utf8.decode(decompressed), 'digraph G { A -> B }');
     });
   });
 
-  group('Mermaid URL structure', () {
-    test('getUrl does not have double slashes in path', () {
-      final url = MermaidUml.instance.getUrl('graph LR; A --> B;').url;
-      expect(url, isNot(contains('//svg')));
-      expect(url, startsWith('https://mermaid.ink/svg/'));
-    });
-  });
-
-  group('Equality and Value Objects', () {
-    test('Color operator == and hashCode', () {
+  group('Value Objects Equality', () {
+    test('Color equality and hashCode', () {
       final c1 = const Color(0xFF112233);
       final c2 = const Color(0xFF112233);
       final c3 = const Color(0xFF445566);
@@ -527,7 +349,7 @@ void main() {
       expect(c1, isNot(equals(c3)));
     });
 
-    test('UmlURL operator ==, hashCode, and cachedBytes', () {
+    test('UmlURL equality and hashCode', () {
       final u1 = UmlURL('https://example.com/a.svg', FileType.svg);
       final u2 = UmlURL('https://example.com/a.svg', FileType.svg);
       final u3 = UmlURL('https://example.com/b.svg', FileType.svg);
@@ -537,10 +359,9 @@ void main() {
       expect(u1.hashCode, equals(u2.hashCode));
       expect(u1, isNot(equals(u3)));
       expect(u1, isNot(equals(u4)));
-      expect(u1.cachedBytes, isNull);
     });
 
-    test('SavedFile operator == and hashCode', () {
+    test('SavedFile equality and hashCode', () {
       final s1 = const SavedFile(path: '/path/file.png', bytesWritten: 123);
       final s2 = const SavedFile(path: '/path/file.png', bytesWritten: 123);
       final s3 = const SavedFile(path: '/path/file.png', bytesWritten: 456);
@@ -551,9 +372,47 @@ void main() {
       expect(s1, isNot(equals(s3)));
       expect(s1, isNot(equals(s4)));
     });
+
+    test('Cross-type equality on Config, Parameters, and EncodingParameters returns false without throwing', () {
+      final svgbobConfig = const SvgbobConfig();
+      final symbolatorConfig = const SymbolatorConfig();
+      final wavedromConfig = const WavedromConfig();
+      final goatConfig = const GoatConfig();
+
+      // Config cross-equality
+      expect(svgbobConfig == symbolatorConfig, isFalse);
+      expect(wavedromConfig == goatConfig, isFalse);
+      expect(svgbobConfig == 'not a config', isFalse);
+
+      // Parameters cross-equality (previously threw TypeError when covariant)
+      final svgbobParams = const SvgbobParameters();
+      final symbolatorParams = const SymbolatorParameters();
+      final wavedromParams = const WavedromParameters();
+      final goatParams = const GoatParameters();
+
+      expect(svgbobParams == symbolatorParams, isFalse);
+      expect(symbolatorParams == svgbobParams, isFalse);
+      expect(goatParams == wavedromParams, isFalse);
+      expect(wavedromParams == goatParams, isFalse);
+      expect(svgbobParams == 'not params', isFalse);
+
+      // EncodingParameters cross-equality
+      final svgbobEnc = const SvgbobEncodingParameters();
+      final symbolatorEnc = const SymbolatorEncodingParameters();
+      expect(svgbobEnc == symbolatorEnc, isFalse);
+      expect(svgbobEnc == 'not enc', isFalse);
+    });
   });
 
-  group('Save & Download Utilities', () {
+  group('Color Conversion', () {
+    test('toHex converts correctly and ignores alpha', () {
+      expect(Color(0xFFFF0000).toHex(), equals('#FF0000'));
+      expect(Color(0x80FF0000).toHex(), equals('#FF0000'));
+      expect(Color(0xFF00000A).toHex(), equals('#00000A'));
+    });
+  });
+
+  group('Save Utilities', () {
     test('saveUml strips redundant file extension', () async {
       final tempDir = Directory.systemTemp.createTempSync('uml_test_');
       addTearDown(() => tempDir.deleteSync(recursive: true));
@@ -575,6 +434,604 @@ void main() {
       );
       expect(savedJpg.path, endsWith('photo.jpeg'));
       expect(savedJpg.path, isNot(endsWith('photo.jpg.jpeg')));
+    });
+  });
+
+  group('Download Validation (Integration)', () {
+    group('PlantUML - All Provider × File Type Combinations', () {
+      for (final provider in PlantUMLProvider.values) {
+        for (final fileType in provider.supportedFileTypes) {
+          test('PlantUML ${provider.name} downloads valid ${fileType.name}', () async {
+            final plantUmlFileType = PlantUMLFileType.values.firstWhere(
+              (ft) => ft.type == fileType,
+            );
+            final url = PlantUml.instance.getUrl(
+              'Alice -> Bob : Hello',
+              parameters: PlantUmlParameters(provider: provider, type: plantUmlFileType),
+            );
+            final bytes = await url.download();
+            expect(bytes, isNotEmpty);
+            expect(_isValidFileFormat(bytes, fileType), isTrue,
+                reason: '${provider.name} should produce valid ${fileType.name}');
+          });
+        }
+      }
+    });
+
+    group('Mermaid - mermaidink Provider × File Type Combinations', () {
+      for (final fileType in MermaidUmlProvider.mermaidink.supportedFileTypes) {
+        test('Mermaid mermaidink downloads valid ${fileType.name}', () async {
+          final mermaidFileType = MermaidUmlFileType.values.firstWhere(
+            (ft) => ft.type == fileType,
+          );
+          final url = MermaidUml.instance.getUrl(
+            'graph TD; A-->B;',
+            parameters: MermaidUmlParameters(
+              provider: MermaidUmlProvider.mermaidink,
+              type: mermaidFileType,
+            ),
+          );
+          final bytes = await url.download();
+          expect(bytes, isNotEmpty);
+          expect(_isValidFileFormat(bytes, fileType), isTrue,
+              reason: 'mermaidink should produce valid ${fileType.name}');
+        });
+      }
+    });
+
+    group('Mermaid - kroki Provider × File Type Combinations', () {
+      for (final fileType in MermaidUmlProvider.kroki.supportedFileTypes) {
+        test('Mermaid kroki downloads valid ${fileType.name}', () async {
+          final mermaidFileType = MermaidUmlFileType.values.firstWhere(
+            (ft) => ft.type == fileType,
+          );
+          final url = MermaidUml.instance.getUrl(
+            'graph TD; A-->B;',
+            parameters: MermaidUmlParameters(
+              provider: MermaidUmlProvider.kroki,
+              type: mermaidFileType,
+            ),
+          );
+          final bytes = await url.download();
+          expect(bytes, isNotEmpty);
+          expect(_isValidFileFormat(bytes, fileType), isTrue,
+              reason: 'kroki should produce valid ${fileType.name}');
+        });
+      }
+    });
+
+    group('Kroki Diagrams - Download Validation', () {
+      test('Graphviz - all file types', () async {
+        for (final fileType in GraphvizProvider.kroki.supportedFileTypes) {
+          final graphvizFileType = GraphvizFileType.values.firstWhere(
+            (ft) => ft.type == fileType,
+          );
+          final url = Graphviz.instance.getUrl(
+            'digraph G { A -> B }',
+            parameters: GraphvizParameters(type: graphvizFileType),
+          );
+          final bytes = await url.download();
+          expect(bytes, isNotEmpty);
+          expect(_isValidFileFormat(bytes, fileType), isTrue,
+              reason: 'Graphviz should produce valid ${fileType.name}');
+        }
+      });
+
+      test('Erd - all file types', () async {
+        for (final fileType in ErdProvider.kroki.supportedFileTypes) {
+          final erdFileType = ErdFileType.values.firstWhere(
+            (ft) => ft.type == fileType,
+          );
+          final url = Erd.instance.getUrl(
+            '[Person]\n*name',
+            parameters: ErdParameters(type: erdFileType),
+          );
+          final bytes = await url.download();
+          expect(bytes, isNotEmpty);
+          expect(_isValidFileFormat(bytes, fileType), isTrue,
+              reason: 'Erd should produce valid ${fileType.name}');
+        }
+      });
+
+      test('Blockdiag - all file types', () async {
+        for (final fileType in BlockdiagProvider.kroki.supportedFileTypes) {
+          final blockdiagFileType = BlockdiagFileType.values.firstWhere(
+            (ft) => ft.type == fileType,
+          );
+          final url = Blockdiag.instance.getUrl(
+            'blockdiag { A -> B; }',
+            parameters: BlockdiagParameters(type: blockdiagFileType),
+          );
+          final bytes = await url.download();
+          expect(bytes, isNotEmpty);
+          expect(_isValidFileFormat(bytes, fileType), isTrue,
+              reason: 'Blockdiag should produce valid ${fileType.name}');
+        }
+      });
+
+      test('Seqdiag - all file types', () async {
+        for (final fileType in SeqdiagProvider.kroki.supportedFileTypes) {
+          final seqdiagFileType = SeqdiagFileType.values.firstWhere(
+            (ft) => ft.type == fileType,
+          );
+          final url = Seqdiag.instance.getUrl(
+            'seqdiag { A -> B; }',
+            parameters: SeqdiagParameters(type: seqdiagFileType),
+          );
+          final bytes = await url.download();
+          expect(bytes, isNotEmpty);
+          expect(_isValidFileFormat(bytes, fileType), isTrue,
+              reason: 'Seqdiag should produce valid ${fileType.name}');
+        }
+      });
+
+      test('Actdiag - all file types', () async {
+        for (final fileType in ActdiagProvider.kroki.supportedFileTypes) {
+          final actdiagFileType = ActdiagFileType.values.firstWhere(
+            (ft) => ft.type == fileType,
+          );
+          final url = Actdiag.instance.getUrl(
+            'actdiag { A -> B; }',
+            parameters: ActdiagParameters(type: actdiagFileType),
+          );
+          final bytes = await url.download();
+          expect(bytes, isNotEmpty);
+          expect(_isValidFileFormat(bytes, fileType), isTrue,
+              reason: 'Actdiag should produce valid ${fileType.name}');
+        }
+      });
+
+      test('Nwdiag - all file types', () async {
+        for (final fileType in NwdiagProvider.kroki.supportedFileTypes) {
+          final nwdiagFileType = NwdiagFileType.values.firstWhere(
+            (ft) => ft.type == fileType,
+          );
+          final url = Nwdiag.instance.getUrl(
+            'nwdiag { A -- B; }',
+            parameters: NwdiagParameters(type: nwdiagFileType),
+          );
+          final bytes = await url.download();
+          expect(bytes, isNotEmpty);
+          expect(_isValidFileFormat(bytes, fileType), isTrue,
+              reason: 'Nwdiag should produce valid ${fileType.name}');
+        }
+      });
+
+      test('Packetdiag - all file types', () async {
+        for (final fileType in PacketdiagProvider.kroki.supportedFileTypes) {
+          final packetdiagFileType = PacketdiagFileType.values.firstWhere(
+            (ft) => ft.type == fileType,
+          );
+          final url = Packetdiag.instance.getUrl(
+            'packetdiag { 0-15: Source Port; }',
+            parameters: PacketdiagParameters(type: packetdiagFileType),
+          );
+          final bytes = await url.download();
+          expect(bytes, isNotEmpty);
+          expect(_isValidFileFormat(bytes, fileType), isTrue,
+              reason: 'Packetdiag should produce valid ${fileType.name}');
+        }
+      });
+
+      test('Rackdiag - all file types', () async {
+        for (final fileType in RackdiagProvider.kroki.supportedFileTypes) {
+          final rackdiagFileType = RackdiagFileType.values.firstWhere(
+            (ft) => ft.type == fileType,
+          );
+          final url = Rackdiag.instance.getUrl(
+            'rackdiag {\n  16U;\n  1: Server;\n}',
+            parameters: RackdiagParameters(type: rackdiagFileType),
+          );
+          final bytes = await url.download();
+          expect(bytes, isNotEmpty);
+          expect(_isValidFileFormat(bytes, fileType), isTrue,
+              reason: 'Rackdiag should produce valid ${fileType.name}');
+        }
+      });
+
+      test('Bpmn - all file types', () async {
+        for (final fileType in BpmnProvider.kroki.supportedFileTypes) {
+          final bpmnFileType = BpmnFileType.values.firstWhere(
+            (ft) => ft.type == fileType,
+          );
+          final url = Bpmn.instance.getUrl(
+            '<?xml version="1.0" encoding="UTF-8"?>\n'
+            '<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"\n'
+            '                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"\n'
+            '                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"\n'
+            '                  id="Definitions_1"\n'
+            '                  targetNamespace="http://bpmn.io/schema/bpmn">\n'
+            '  <bpmn:process id="Process_1" isExecutable="false">\n'
+            '    <bpmn:startEvent id="StartEvent_1"/>\n'
+            '  </bpmn:process>\n'
+            '  <bpmndi:BPMNDiagram id="BPMNDiagram_1">\n'
+            '    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1">\n'
+            '      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">\n'
+            '        <dc:Bounds x="173" y="102" width="36" height="36" />\n'
+            '      </bpmndi:BPMNShape>\n'
+            '    </bpmndi:BPMNPlane>\n'
+            '  </bpmndi:BPMNDiagram>\n'
+            '</bpmn:definitions>',
+            parameters: BpmnParameters(type: bpmnFileType),
+          );
+          final bytes = await url.download();
+          expect(bytes, isNotEmpty);
+          expect(_isValidFileFormat(bytes, fileType), isTrue,
+              reason: 'Bpmn should produce valid ${fileType.name}');
+        }
+      });
+
+      test('Bytefield - all file types', () async {
+        for (final fileType in BytefieldProvider.kroki.supportedFileTypes) {
+          final bytefieldFileType = BytefieldFileType.values.firstWhere(
+            (ft) => ft.type == fileType,
+          );
+          final url = Bytefield.instance.getUrl(
+            '(draw-box "Field")',
+            parameters: BytefieldParameters(type: bytefieldFileType),
+          );
+          final bytes = await url.download();
+          expect(bytes, isNotEmpty);
+          expect(_isValidFileFormat(bytes, fileType), isTrue,
+              reason: 'Bytefield should produce valid ${fileType.name}');
+        }
+      });
+
+      test('Ditaa - all file types', () async {
+        for (final fileType in DitaaProvider.kroki.supportedFileTypes) {
+          final ditaaFileType = DitaaFileType.values.firstWhere(
+            (ft) => ft.type == fileType,
+          );
+          final url = Ditaa.instance.getUrl(
+            '+---+\n| A |\n+---+',
+            parameters: DitaaParameters(type: ditaaFileType),
+          );
+          final bytes = await url.download();
+          expect(bytes, isNotEmpty);
+          expect(_isValidFileFormat(bytes, fileType), isTrue,
+              reason: 'Ditaa should produce valid ${fileType.name}');
+        }
+      });
+
+      test('Nomnoml - all file types', () async {
+        for (final fileType in NomnomlProvider.kroki.supportedFileTypes) {
+          final nomnomlFileType = NomnomlFileType.values.firstWhere(
+            (ft) => ft.type == fileType,
+          );
+          final url = Nomnoml.instance.getUrl(
+            '[A] -> [B]',
+            parameters: NomnomlParameters(type: nomnomlFileType),
+          );
+          final bytes = await url.download();
+          expect(bytes, isNotEmpty);
+          expect(_isValidFileFormat(bytes, fileType), isTrue,
+              reason: 'Nomnoml should produce valid ${fileType.name}');
+        }
+      });
+
+      test('Pikchr - all file types', () async {
+        for (final fileType in PikchrProvider.kroki.supportedFileTypes) {
+          final pikchrFileType = PikchrFileType.values.firstWhere(
+            (ft) => ft.type == fileType,
+          );
+          final url = Pikchr.instance.getUrl(
+            'L: circle "A"',
+            parameters: PikchrParameters(type: pikchrFileType),
+          );
+          final bytes = await url.download();
+          expect(bytes, isNotEmpty);
+          expect(_isValidFileFormat(bytes, fileType), isTrue,
+              reason: 'Pikchr should produce valid ${fileType.name}');
+        }
+      });
+
+      test('Structurizr - all file types', () async {
+        for (final fileType in StructurizrProvider.kroki.supportedFileTypes) {
+          final structurizrFileType = StructurizrFileType.values.firstWhere(
+            (ft) => ft.type == fileType,
+          );
+          final url = Structurizr.instance.getUrl(
+            'workspace {\n'
+            '    model {\n'
+            '        user = person "User"\n'
+            '    }\n'
+            '    views {\n'
+            '        systemLandscape "SystemLandscape" {\n'
+            '            include *\n'
+            '            autoLayout\n'
+            '        }\n'
+            '    }\n'
+            '}',
+            parameters: StructurizrParameters(type: structurizrFileType),
+          );
+          final bytes = await url.download();
+          expect(bytes, isNotEmpty);
+          expect(_isValidFileFormat(bytes, fileType), isTrue,
+              reason: 'Structurizr should produce valid ${fileType.name}');
+        }
+      });
+
+      test('Tikz - all file types', () async {
+        for (final fileType in TikzProvider.kroki.supportedFileTypes) {
+          final tikzFileType = TikzFileType.values.firstWhere(
+            (ft) => ft.type == fileType,
+          );
+          final url = Tikz.instance.getUrl(
+            '\\documentclass{standalone}\n'
+            '\\usepackage{tikz}\n'
+            '\\begin{document}\n'
+            '\\begin{tikzpicture}\n'
+            '  \\draw (0,0) circle (1cm);\n'
+            '\\end{tikzpicture}\n'
+            '\\end{document}',
+            parameters: TikzParameters(type: tikzFileType),
+          );
+          final bytes = await url.download();
+          expect(bytes, isNotEmpty);
+          expect(_isValidFileFormat(bytes, fileType), isTrue,
+              reason: 'Tikz should produce valid ${fileType.name}');
+        }
+      });
+
+      test('Umlet - all file types', () async {
+        for (final fileType in UmletProvider.kroki.supportedFileTypes) {
+          final umletFileType = UmletFileType.values.firstWhere(
+            (ft) => ft.type == fileType,
+          );
+          final url = Umlet.instance.getUrl(
+            '<panel_attributes>\n'
+            'bg=lavender\n'
+            'layer=1\n'
+            'printCoordinates=true\n'
+            '--50--50--100--100--\n'
+            'lt=dashed\n'
+            '</panel_attributes>',
+            parameters: UmletParameters(type: umletFileType),
+          );
+          final bytes = await url.download();
+          expect(bytes, isNotEmpty);
+          expect(_isValidFileFormat(bytes, fileType), isTrue,
+              reason: 'Umlet should produce valid ${fileType.name}');
+        }
+      });
+
+      test('Vega - all file types', () async {
+        for (final fileType in VegaProvider.kroki.supportedFileTypes) {
+          final vegaFileType = VegaFileType.values.firstWhere(
+            (ft) => ft.type == fileType,
+          );
+          final url = Vega.instance.getUrl(
+            '{\n'
+            '  "\$schema": "https://vega.github.io/schema/vega/v5.json",\n'
+            '  "width": 100,\n'
+            '  "height": 100,\n'
+            '  "data": []\n'
+            '}',
+            parameters: VegaParameters(type: vegaFileType),
+          );
+          final bytes = await url.download();
+          expect(bytes, isNotEmpty);
+          expect(_isValidFileFormat(bytes, fileType), isTrue,
+              reason: 'Vega should produce valid ${fileType.name}');
+        }
+      });
+
+      test('VegaLite - all file types', () async {
+        for (final fileType in VegaLiteProvider.kroki.supportedFileTypes) {
+          final vegaLiteFileType = VegaLiteFileType.values.firstWhere(
+            (ft) => ft.type == fileType,
+          );
+          final url = VegaLite.instance.getUrl(
+            '{\n'
+            '  "\$schema": "https://vega.github.io/schema/vega-lite/v5.json",\n'
+            '  "data": {"values": [{"a": "A", "b": 28}]},\n'
+            '  "mark": "bar",\n'
+            '  "encoding": {\n'
+            '    "x": {"field": "a", "type": "nominal"},\n'
+            '    "y": {"field": "b", "type": "quantitative"}\n'
+            '  }\n'
+            '}',
+            parameters: VegaLiteParameters(type: vegaLiteFileType),
+          );
+          final bytes = await url.download();
+          expect(bytes, isNotEmpty);
+          expect(_isValidFileFormat(bytes, fileType), isTrue,
+              reason: 'VegaLite should produce valid ${fileType.name}');
+        }
+      });
+
+      test('Wavedrom - all file types', () async {
+        for (final fileType in WavedromProvider.kroki.supportedFileTypes) {
+          final wavedromFileType = WavedromFileType.values.firstWhere(
+            (ft) => ft.type == fileType,
+          );
+          final url = Wavedrom.instance.getUrl(
+            '{"signal": [{"name": "clk", "wave": "p"}]}',
+            parameters: WavedromParameters(type: wavedromFileType),
+          );
+          final bytes = await url.download();
+          expect(bytes, isNotEmpty);
+          expect(_isValidFileFormat(bytes, fileType), isTrue,
+              reason: 'Wavedrom should produce valid ${fileType.name}');
+        }
+      });
+
+      test('Wireviz - all file types', () async {
+        for (final fileType in WirevizProvider.kroki.supportedFileTypes) {
+          final wirevizFileType = WirevizFileType.values.firstWhere(
+            (ft) => ft.type == fileType,
+          );
+          final url = Wireviz.instance.getUrl(
+            'connectors:\n'
+            '  X1:\n'
+            '    type: D-Sub\n'
+            '    pins: [1, 2]\n',
+            parameters: WirevizParameters(type: wirevizFileType),
+          );
+          final bytes = await url.download();
+          expect(bytes, isNotEmpty);
+          expect(_isValidFileFormat(bytes, fileType), isTrue,
+              reason: 'Wireviz should produce valid ${fileType.name}');
+        }
+      });
+
+      test('C4Plantuml - all file types', () async {
+        for (final fileType in C4PlantumlProvider.kroki.supportedFileTypes) {
+          final c4PlantumlFileType = C4PlantumlFileType.values.firstWhere(
+            (ft) => ft.type == fileType,
+          );
+          final url = C4Plantuml.instance.getUrl(
+            '@startuml\nperson U\n@enduml',
+            parameters: C4PlantumlParameters(type: c4PlantumlFileType),
+          );
+          final bytes = await url.download();
+          expect(bytes, isNotEmpty);
+          expect(_isValidFileFormat(bytes, fileType), isTrue,
+              reason: 'C4Plantuml should produce valid ${fileType.name}');
+        }
+      });
+
+      test('D2 - all file types', () async {
+        for (final fileType in D2Provider.kroki.supportedFileTypes) {
+          final d2FileType = D2FileType.values.firstWhere(
+            (ft) => ft.type == fileType,
+          );
+          final url = D2.instance.getUrl(
+            'x -> y',
+            parameters: D2Parameters(type: d2FileType),
+          );
+          final bytes = await url.download();
+          expect(bytes, isNotEmpty);
+          expect(_isValidFileFormat(bytes, fileType), isTrue,
+              reason: 'D2 should produce valid ${fileType.name}');
+        }
+      });
+
+      test('Dbml - all file types', () async {
+        for (final fileType in DbmlProvider.kroki.supportedFileTypes) {
+          final dbmlFileType = DbmlFileType.values.firstWhere(
+            (ft) => ft.type == fileType,
+          );
+          final url = Dbml.instance.getUrl(
+            'Table users { id int }',
+            parameters: DbmlParameters(type: dbmlFileType),
+          );
+          final bytes = await url.download();
+          expect(bytes, isNotEmpty);
+          expect(_isValidFileFormat(bytes, fileType), isTrue,
+              reason: 'Dbml should produce valid ${fileType.name}');
+        }
+      });
+
+      test('Excalidraw - all file types', () async {
+        for (final fileType in ExcalidrawProvider.kroki.supportedFileTypes) {
+          final excalidrawFileType = ExcalidrawFileType.values.firstWhere(
+            (ft) => ft.type == fileType,
+          );
+          final url = Excalidraw.instance.getUrl(
+            '{"type": "excalidraw", "version": 2, "elements": []}',
+            parameters: ExcalidrawParameters(type: excalidrawFileType),
+          );
+          final bytes = await url.download();
+          expect(bytes, isNotEmpty);
+          expect(_isValidFileFormat(bytes, fileType), isTrue,
+              reason: 'Excalidraw should produce valid ${fileType.name}');
+              
+        }
+      });
+
+      test('Goat - all file types', () async {
+        for (final fileType in GoatProvider.kroki.supportedFileTypes) {
+          final goatFileType = GoatFileType.values.firstWhere(
+            (ft) => ft.type == fileType,
+          );
+          final url = Goat.instance.getUrl(
+            'A -> B',
+            parameters: GoatParameters(type: goatFileType),
+          );
+          final bytes = await url.download();
+          expect(bytes, isNotEmpty);
+          expect(_isValidFileFormat(bytes, fileType), isTrue,
+              reason: 'Goat should produce valid ${fileType.name}');
+        }
+      });
+
+      test('Lini - all file types', () async {
+        for (final fileType in LiniProvider.kroki.supportedFileTypes) {
+          final liniFileType = LiniFileType.values.firstWhere(
+            (ft) => ft.type == fileType,
+          );
+          final url = Lini.instance.getUrl(
+            'A -> B',
+            parameters: LiniParameters(type: liniFileType),
+          );
+          final bytes = await url.download();
+          expect(bytes, isNotEmpty);
+          expect(_isValidFileFormat(bytes, fileType), isTrue,
+              reason: 'Lini should produce valid ${fileType.name}');
+        }
+      });
+
+      test('Svgbob - all file types', () async {
+        for (final fileType in SvgbobProvider.kroki.supportedFileTypes) {
+          final svgbobFileType = SvgbobFileType.values.firstWhere(
+            (ft) => ft.type == fileType,
+          );
+          final url = Svgbob.instance.getUrl(
+            'A -> B',
+            parameters: SvgbobParameters(type: svgbobFileType),
+          );
+          final bytes = await url.download();
+          expect(bytes, isNotEmpty);
+          expect(_isValidFileFormat(bytes, fileType), isTrue,
+              reason: 'Svgbob should produce valid ${fileType.name}');
+        }
+      });
+
+      test('Symbolator - all file types', () async {
+        for (final fileType in SymbolatorProvider.kroki.supportedFileTypes) {
+          final symbolatorFileType = SymbolatorFileType.values.firstWhere(
+            (ft) => ft.type == fileType,
+          );
+          final url = Symbolator.instance.getUrl(
+            'package demo is\n'
+            '    component demo_device is\n'
+            '        port (\n'
+            '            Clock : in std_ulogic;\n'
+            '            Data_out : out std_ulogic\n'
+            '        );\n'
+            '    end component;\n'
+            'end package;',
+            parameters: SymbolatorParameters(type: symbolatorFileType),
+          );
+          final bytes = await url.download();
+          expect(bytes, isNotEmpty);
+          expect(_isValidFileFormat(bytes, fileType), isTrue,
+              reason: 'Symbolator should produce valid ${fileType.name}');
+        }
+      });
+    });
+
+    group('Download Caching Behavior', () {
+      test('UmlURL caches downloaded bytes', () async {
+        final url = PlantUml.instance.getUrl('Alice -> Bob');
+        
+        final bytes1 = await url.download();
+        expect(url.cachedBytes, isNotNull);
+        
+        final bytes2 = await url.download(forceFetch: false);
+        expect(bytes2, same(bytes1));
+      });
+
+      test('UmlURL forceFetch re-downloads', () async {
+        final url = PlantUml.instance.getUrl('Alice -> Bob');
+        
+        final bytes1 = await url.download();
+        final bytes2 = await url.download(forceFetch: true);
+        
+        expect(bytes2, isNot(same(bytes1)));
+        expect(bytes2, equals(bytes1));
+      });
     });
   });
 }

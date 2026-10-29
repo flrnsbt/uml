@@ -32,9 +32,10 @@ Future<SavedFile> saveUml(
   // Build the filename, stripping redundant extension if already present
   var name = filename ?? 'diagram';
   final extWithDot = '.$extension';
-  if (name.toLowerCase().endsWith(extWithDot)) {
+  final lowerName = name.toLowerCase();
+  if (lowerName.endsWith(extWithDot)) {
     name = name.substring(0, name.length - extWithDot.length);
-  } else if (extension == 'jpeg' && name.toLowerCase().endsWith('.jpg')) {
+  } else if (extension == 'jpeg' && lowerName.endsWith('.jpg')) {
     name = name.substring(0, name.length - 4);
   }
   final fileName = '$name.$extension';

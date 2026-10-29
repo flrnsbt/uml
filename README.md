@@ -10,6 +10,8 @@ Generate [PlantUML](https://plantuml.com/) and [Mermaid](https://mermaid.js.org/
 - **Fine-grained styling**: Control background colors, font colors, border colors, and more for each diagram element type.
 - **Download & save**: Download diagram bytes and save to file on native platforms or trigger browser downloads on web.
 - **Multiple providers**: Switch between PlantUML servers (planttext, plantuml.com).
+- **Kroki diagram types**: Render 30+ diagram types via [Kroki](https://kroki.io)
+  (Graphviz, ERD, BlockDiag, SeqDiag, Mermaid, PlantUML, and more).
 - **Multiple formats**: Export as SVG, PNG, WebP, or JPEG.
 
 ## Installation
@@ -122,6 +124,64 @@ print('Saved: ${saved.path}');
 | `PlantUMLTheme` | Built-in themes (darkula, spacelab, etc.) |
 | `Color` | ARGB32 color with `toHex()` method |
 | `TextAlign` | left, right, or center |
+
+### Kroki diagram types
+
+Each Kroki diagram type has its own folder (e.g., `graphviz`, `erd`, `blockdiag`,
+`seqdiag`, etc.) following the same pattern as `plant_uml` and `mermaid_uml`.
+Choose a diagram type, then its provider (Kroki) to generate a URL.
+
+| Class | Description |
+|-------|-------------|
+| `Graphviz` | Graphviz DOT diagrams via Kroki |
+| `Erd` | Entity relationship diagrams via Kroki |
+| `Blockdiag` | BlockDiag diagrams via Kroki |
+| `Seqdiag` | SeqDiag diagrams via Kroki |
+| `Actdiag` | ActDiag diagrams via Kroki |
+| `Nwdiag` | NwDiag diagrams via Kroki |
+| `Packetdiag` | PacketDiag diagrams via Kroki |
+| `Rackdiag` | RackDiag diagrams via Kroki |
+| `Bpmn` | BPMN diagrams via Kroki |
+| `Bytefield` | Bytefield diagrams via Kroki |
+| `Ditaa` | Ditaa diagrams via Kroki |
+| `Nomnoml` | Nomnoml diagrams via Kroki |
+| `Pikchr` | Pikchr diagrams via Kroki |
+| `Structurizr` | Structurizr diagrams via Kroki |
+| `Tikz` | TikZ diagrams via Kroki |
+| `Umlet` | UMLet diagrams via Kroki |
+| `Vega` | Vega specs via Kroki |
+| `VegaLite` | Vega-Lite specs via Kroki |
+| `Wavedrom` | WaveDrom diagrams via Kroki |
+| `Wireviz` | WireViz diagrams via Kroki |
+| `C4Plantuml` | C4 with PlantUML via Kroki |
+| `D2` | D2 diagrams via Kroki |
+| `Dbml` | DBML diagrams via Kroki |
+| `Excalidraw` | Excalidraw drawings via Kroki |
+| `Goat` | GoAT diagrams via Kroki |
+| `Lini` | Lini diagrams via Kroki |
+| `Svgbob` | Svgbob diagrams via Kroki |
+| `Symbolator` | Symbolator diagrams via Kroki |
+
+Each class is a singleton with `getUrl(code)` that returns a `UmlURL` at
+`https://kroki.io/{diagram_type}/{format}/{encoded}`. Supported file types
+vary by diagram type (see https://kroki.io).
+
+Example:
+
+```dart
+import 'package:uml/uml.dart';
+
+void main() {
+  final url = Graphviz.instance.getUrl('digraph G { Hello -> World }');
+  print(url.url);
+
+  final erdUrl = Erd.instance.getUrl(
+    '[Person] *name',
+    parameters: const ErdParameters(type: ErdFileType.png),
+  );
+  print(erdUrl.url);
+}
+```
 
 ### Mermaid
 

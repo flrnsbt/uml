@@ -13,6 +13,9 @@ void main() async {
   mermaidExamples();
   print('\n');
 
+  krokiDiagramExamples();
+  print('\n');
+
   await downloadAndSaveExample();
 }
 
@@ -48,13 +51,19 @@ void plantUmlExamples() {
   );
   print('plantuml.com: ${plantumlCom.url}');
 
+  // 3.5. Kroki provider (unified diagram API)
+  final krokiUrl = PlantUml.instance.getUrl(
+    code,
+    parameters: const PlantUmlParameters(provider: PlantUMLProvider.kroki),
+  );
+  print('Kroki: ${krokiUrl.url}');
+
   // 4. With theme (Darkula)
   final themedUrl = PlantUml.instance.getUrl(
     code,
-    parameters: const PlantUmlParameters(
-      encodingParameters: PlantUmlEncodingParameters(
-        theme: PlantUmlTheme.darkula,
-      ),
+    parameters: const PlantUmlParameters(),
+    encodingParameters: const PlantUmlEncodingParameters(
+      theme: PlantUmlTheme.darkula,
     ),
   );
   print('Darkula theme: ${themedUrl.url}');
@@ -62,15 +71,16 @@ void plantUmlExamples() {
   // 5. With custom colors and styling
   final styledUrl = PlantUml.instance.getUrl(
     code,
-    parameters: const PlantUmlParameters(
-      encodingParameters: PlantUmlEncodingParameters(
-        backgroundColor: Color(0xFF_F0_F8_FF),
-        fontColor: Color(0xFF_33_33_33),
-        arrowColor: Color(0xFF_00_66_CC),
+    parameters: const PlantUmlParameters(),
+    encodingParameters: const PlantUmlEncodingParameters(
+      styleParameters: PlantUmlEncodingStyleParameters(
+        backgroundColor: Color(0xFFF0F8FF),
+        fontColor: Color(0xFF333333),
+        arrowColor: Color(0xFF0066CC),
         fontSize: 16,
         textAlign: TextAlign.left,
-        noteBackgroundColor: Color(0xFF_FF_FF_CC),
-        noteBorderColor: Color(0xFF_CC_CC_00),
+        noteBackgroundColor: Color(0xFFFFFFCC),
+        noteBorderColor: Color(0xFFCCCC00),
       ),
     ),
   );
@@ -79,18 +89,19 @@ void plantUmlExamples() {
   // 6. Block-specific styling (activity, rectangle, class, etc.)
   final blockStyledUrl = PlantUml.instance.getUrl(
     code,
-    parameters: const PlantUmlParameters(
-      encodingParameters: PlantUmlEncodingParameters(
-        rectangleBackgroundColor: Color(0xFF_EE_FF_EE),
-        rectangleFontColor: Color(0xFF_00_66_00),
-        rectangleBorderColor: Color(0xFF_00_99_00),
+    parameters: const PlantUmlParameters(),
+    encodingParameters: const PlantUmlEncodingParameters(
+      styleParameters: PlantUmlEncodingStyleParameters(
+        rectangleBackgroundColor: Color(0xFFEEFFEE),
+        rectangleFontColor: Color(0xFF006600),
+        rectangleBorderColor: Color(0xFF009900),
         activityRoundCorner: 10.0,
-        activityBackgroundColor: Color(0xFF_FF_F0_EE),
-        activityFontColor: Color(0xFF_99_66_00),
-        activityBorderColor: Color(0xFF_CC_99_00),
-        componentBackgroundColor: Color(0xFF_EE_EE_FF),
-        componentFontColor: Color(0xFF_00_00_99),
-        componentBorderColor: Color(0xFF_00_00_CC),
+        activityBackgroundColor: Color(0xFFFFF0EE),
+        activityFontColor: Color(0xFF996600),
+        activityBorderColor: Color(0xFFCC9900),
+        componentBackgroundColor: Color(0xFFEEEEFF),
+        componentFontColor: Color(0xFF000099),
+        componentBorderColor: Color(0xFF0000CC),
       ),
     ),
   );
@@ -123,6 +134,13 @@ void mermaidExamples() {
       A[Hello] --> B[World]
   ''';
 
+  // Check supported file types for each provider
+  print(
+      'Mermaid.ink supports: ${MermaidUmlProvider.mermaidink.supportedFileTypes.map((t) => t.name).join(", ")}');
+  print(
+      'Kroki supports: ${MermaidUmlProvider.kroki.supportedFileTypes.map((t) => t.name).join(", ")}');
+  print('');
+
   // 1. Default SVG
   final defaultUrl = MermaidUml.instance.getUrl(code);
   print('Default SVG: ${defaultUrl.url}');
@@ -133,6 +151,13 @@ void mermaidExamples() {
     parameters: const MermaidUmlParameters(type: MermaidUmlFileType.png),
   );
   print('PNG: ${pngUrl.url}');
+
+  // 2.5. Kroki provider (unified diagram API)
+  final krokiUrl = MermaidUml.instance.getUrl(
+    code,
+    parameters: const MermaidUmlParameters(provider: MermaidUmlProvider.kroki),
+  );
+  print('Kroki: ${krokiUrl.url}');
 
   // 3. WebP export
   final webpUrl = MermaidUml.instance.getUrl(
@@ -148,40 +173,74 @@ void mermaidExamples() {
   );
   print('JPEG: ${jpegUrl.url}');
 
-  // 5. With dark theme
-  final darkUrl = MermaidUml.instance.getUrl(
+  // 5. PDF export (only supported by Kroki)
+  final pdfUrl = MermaidUml.instance.getUrl(
     code,
     parameters: const MermaidUmlParameters(
-      encodingParameters: MermaidUmlEncodingParameters(
-        theme: MermaidUmlTheme.dark,
-      ),
+      provider: MermaidUmlProvider.kroki,
+      type: MermaidUmlFileType.pdf,
+    ),
+  );
+  print('PDF (Kroki): ${pdfUrl.url}');
+
+  // 6. With dark theme
+  final darkUrl = MermaidUml.instance.getUrl(
+    code,
+    parameters: const MermaidUmlParameters(),
+    encodingParameters: const MermaidUmlEncodingParameters(
+      theme: MermaidUmlTheme.dark,
     ),
   );
   print('Dark theme: ${darkUrl.url}');
 
-  // 6. With forest theme
+  // 7. With forest theme
   final forestUrl = MermaidUml.instance.getUrl(
     code,
-    parameters: const MermaidUmlParameters(
-      encodingParameters: MermaidUmlEncodingParameters(
-        theme: MermaidUmlTheme.forest,
-      ),
+    parameters: const MermaidUmlParameters(),
+    encodingParameters: const MermaidUmlEncodingParameters(
+      theme: MermaidUmlTheme.forest,
     ),
   );
   print('Forest theme: ${forestUrl.url}');
 
-  // 7. Using copyWith
-  final baseParams = const MermaidUmlParameters(type: MermaidUmlFileType.svg);
+  // 8. Using copyWith
+  final baseParams = const MermaidUmlParameters(type: MermaidUmlFileType.webp);
   final modifiedUrl = MermaidUml.instance.getUrl(
     code,
     parameters: baseParams.copyWith(
       type: MermaidUmlFileType.png,
-      encodingParameters: const MermaidUmlEncodingParameters(
-        theme: MermaidUmlTheme.neutral,
-      ),
+    ),
+    encodingParameters: const MermaidUmlEncodingParameters(
+      theme: MermaidUmlTheme.neutral,
     ),
   );
   print('copyWith modified: ${modifiedUrl.url}');
+}
+
+// ---------------------------------------------------------------------------
+// Kroki diagram examples (all kroki.io diagram types)
+// ---------------------------------------------------------------------------
+
+void krokiDiagramExamples() {
+  print('--- Kroki Diagram Types ---');
+
+  final graphvizUrl = Graphviz.instance.getUrl('digraph G { Hello -> World }');
+  print('Graphviz (svg): ${graphvizUrl.url}');
+
+  final erdUrl = Erd.instance.getUrl(
+    '[Person] *name\nPerson *--1 Location',
+    parameters: const ErdParameters(type: ErdFileType.png),
+  );
+  print('ERD (png): ${erdUrl.url}');
+
+  final blockdiagUrl = Blockdiag.instance.getUrl(
+    'blockdiag { A => B; }',
+    parameters: const BlockdiagParameters(type: BlockdiagFileType.pdf),
+  );
+  print('BlockDiag (pdf): ${blockdiagUrl.url}');
+
+  final seqdiagUrl = Seqdiag.instance.getUrl('seqdiag { A => B; }');
+  print('SeqDiag (svg): ${seqdiagUrl.url}');
 }
 
 // ---------------------------------------------------------------------------
@@ -227,7 +286,7 @@ Future<void> downloadAndSaveExample() async {
   // Mermaid save example
   final mermaidUml = MermaidUml.instance.getUrl(
     'graph LR; A --> B',
-    parameters: const MermaidUmlParameters(type: MermaidUmlFileType.svg),
+    parameters: const MermaidUmlParameters(type: MermaidUmlFileType.webp),
   );
   final mermaidSaved = await mermaidUml.save(filename: 'mermaid-flow');
   print('Mermaid saved: ${mermaidSaved.path}');
